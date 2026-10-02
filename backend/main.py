@@ -14,7 +14,7 @@ from auth.google_auth import (
 )
 
 from config import (
-    FRONTEND_URL,
+    ALLOWED_ORIGINS,
     GOOGLE_SESSION_SECRET
 )
 
@@ -44,9 +44,7 @@ app.add_middleware(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        FRONTEND_URL
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_headers=["*"],
     allow_methods=["*"]
