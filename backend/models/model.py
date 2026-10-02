@@ -17,7 +17,6 @@ class User(Base):
     updated_at=Column(DateTime,default=datetime.utcnow,onupdate=datetime.utcnow)
 
     refresh_tokens=relationship("RefreshToken",back_populates="user",cascade="all,delete-orphan")
-    resumes=relationship("Resume",back_populates="user",cascade="all,delete-orphan")
 
 class RefreshToken(Base):
     __tablename__="refresh_tokens"
@@ -31,15 +30,3 @@ class RefreshToken(Base):
     replaced_by=Column(Integer,ForeignKey("refresh_tokens.id"),nullable=True)
 
     user=relationship("User",back_populates="refresh_tokens")
-
-class Resume(Base):
-    __tablename__ = "resumes"
-
-    id          = Column(Integer, primary_key=True, autoincrement=True)
-    user_id     = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    filename    = Column(String(500), nullable=False)
-    storage_path= Column(String(1000), nullable=False)   # path inside Supabase bucket
-    public_url  = Column(String(2000), nullable=False)   # signed / public URL returned to user
-    created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
-
-    user = relationship("User", back_populates="resumes")

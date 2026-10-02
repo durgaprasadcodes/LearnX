@@ -114,5 +114,7 @@ async def get_me(
     return {
         "id": current_user.id,
         "name": current_user.name,
-        "email": current_user.email
+        "email": current_user.email,
+        "picture": current_user.picture,
+        "image_url": current_user.picture
     }
