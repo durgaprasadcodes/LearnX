@@ -85,16 +85,16 @@ async def verify_email(response:Response, payload:VerifyEmail, db:Session=Depend
         key="access_token",
         value=access_token,
         httponly=True,
-        samesite="lax",
-        secure=False,
+        samesite="none",
+        secure=True,
         max_age=60 * ACCESS_TOKEN_EXPIRY_TIME
     )
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        samesite="lax",
-        secure=False,
+        samesite="none",
+        secure=True,
         max_age=60 * 60 * 24 * REFRESH_TOKEN_EXPIRY_TIME
     )
     
@@ -124,8 +124,8 @@ async def login(response:Response,user:LoginSchema,db:Session=Depends(get_db)):
         key="access_token",
         value=access_token,
         httponly=True,
-        samesite="lax",
-        secure=False,
+        samesite="none",
+        secure=True,
         max_age=60*ACCESS_TOKEN_EXPIRY_TIME
     )
     
@@ -134,8 +134,8 @@ async def login(response:Response,user:LoginSchema,db:Session=Depends(get_db)):
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        samesite="lax",
-        secure=False,
+        samesite="none",
+        secure=True,
         max_age=60*60*24*REFRESH_TOKEN_EXPIRY_TIME
     )
     
@@ -187,8 +187,8 @@ async def refresh(request:Request,response:Response,db:Session=Depends(get_db)):
         key="access_token",
         value=access_token,
         httponly=True,
-        samesite="lax",
-        secure=False,
+        samesite="none",
+        secure= True,
         max_age=60*ACCESS_TOKEN_EXPIRY_TIME
     )
     
@@ -196,8 +196,8 @@ async def refresh(request:Request,response:Response,db:Session=Depends(get_db)):
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        samesite="lax",
-        secure=False,
+        samesite="none",
+        secure=True,
         max_age=60*60*24*REFRESH_TOKEN_EXPIRY_TIME
     )
     
@@ -218,14 +218,14 @@ async def logout(response:Response,request:Request ,db:Session=Depends(get_db)):
     response.delete_cookie(
         key="refresh_token",
         httponly=True,
-        samesite="lax",
-        secure=False
+        samesite="none",
+        secure=True
     )
     response.delete_cookie(
         key="access_token",
         httponly=True,
-        samesite="lax",
-        secure=False
+        samesite="none",
+        secure=True
     )
     return {
         "message":"Logged Out Successfully"
@@ -260,8 +260,8 @@ def user_existed_already(existing_google_user:GoogleUser,db:Session):
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=True,
+        samesite="none",
         max_age=60*ACCESS_TOKEN_EXPIRY_TIME
     )
 
@@ -269,8 +269,8 @@ def user_existed_already(existing_google_user:GoogleUser,db:Session):
         key="refresh_token",
         value=raw_refresh_token,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=True,
+        samesite="none",
         max_age=60*60*24*REFRESH_TOKEN_EXPIRY_TIME
     )
     return response
@@ -356,8 +356,8 @@ async def google_callback(request:Request,background_tasks:BackgroundTasks,db:Se
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=True,
+        samesite="none",
         max_age=60*ACCESS_TOKEN_EXPIRY_TIME
     )
 
@@ -365,8 +365,8 @@ async def google_callback(request:Request,background_tasks:BackgroundTasks,db:Se
         key="refresh_token",
         value=raw_refresh_token,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=True,
+        samesite="none",
         max_age=60*60*24*REFRESH_TOKEN_EXPIRY_TIME
     )
 
@@ -408,8 +408,8 @@ async def verify_otp(response:Response,verify_request:VerifyOTP,db:Session=Depen
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=True,
+        samesite="none",
         max_age=60*ACCESS_TOKEN_EXPIRY_TIME
     )
     
@@ -417,8 +417,8 @@ async def verify_otp(response:Response,verify_request:VerifyOTP,db:Session=Depen
         key="refresh_token",
         value=raw_refresh_token,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=True,
+        samesite="none",
         max_age=60*60*24*REFRESH_TOKEN_EXPIRY_TIME
     )
     
