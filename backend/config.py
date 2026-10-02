@@ -189,10 +189,20 @@ async def send_email(to_email: str, otp: int):
     )
 
 REDIS_HOST = os.getenv("REDIS_HOST")
-REDIS_PORT = os.getenv("REDIS_PORT")
-REDIS_DB = os.getenv("REDIS_DB")
+REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
+REDIS_USERNAME = os.getenv("REDIS_USERNAME", "default")
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+REDIS_DB = int(os.getenv("REDIS_DB", "0"))
 
-redis_client = redis.Redis(host=REDIS_HOST,port=REDIS_PORT,db=REDIS_DB , decode_responses=True,protocol=2)
+redis_client = redis.Redis(
+    host=REDIS_HOST,
+    port=REDIS_PORT,
+    username=REDIS_USERNAME,
+    password=REDIS_PASSWORD,
+    db=REDIS_DB,
+    decode_responses=True,
+    protocol=2
+)
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
