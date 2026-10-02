@@ -15,3 +15,45 @@ class GoogleUser(BaseModel):
     email:EmailStr
     google_id:str
     picture:str
+
+class VerifyOTP(BaseModel):
+    google_id:str
+    email:EmailStr
+    otp:str
+
+class VerifyEmail(BaseModel):
+    email:EmailStr
+    otp:str
+
+class PageContentSchema(BaseModel):
+    page_number: int
+    content: str
+    metadata: dict = {}
+
+class ChunkSchema(BaseModel):
+    chunk_index: int
+    page_number: int
+    content: str
+    metadata: dict = {}
+
+class DocumentExtractionResponse(BaseModel):
+    status: str = "success"
+    message: str = "Document uploaded, extracted, and chunked successfully"
+    filename: str
+    storage_path: str
+    public_url: str | None = None
+    resume_id: int | None = None
+    user_id: int | None = None
+    total_pages: int
+    total_chunks: int
+    extracted_text: str
+    pages: list[PageContentSchema]
+    chunks: list[ChunkSchema]
+
+
+class ResumeItemResponse(BaseModel):
+    id: int
+    filename: str
+    storage_path: str
+    public_url: str
+    created_at: str

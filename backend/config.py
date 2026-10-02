@@ -1,9 +1,11 @@
 from pwdlib import PasswordHash
 from dotenv import load_dotenv
-import os,hashlib
+import os
+import hashlib
 from email.message import EmailMessage
 import aiosmtplib
-
+import secrets
+import redis.asyncio as redis
 
 load_dotenv()
 
@@ -18,7 +20,10 @@ def hash_refresh_token(token):
 def verify_password(user_password:str|int|bytes,db_password:str)->bool:
     return pwd_lib.verify(str(user_password),db_password)
 
-DATABASE_URL=os.getenv("DATABASE_URL")
+def generate_otp():
+    return str(secrets.randbelow(900000) + 100000)
+
+SUPABASE_DATABASE_URL=os.getenv("SUPABASE_DATABASE_URL")
 SECRET_KEY=os.getenv("SECRET_KEY")
 ALGORITHM=os.getenv("ALGORITHM")
 FRONTEND_URL=os.getenv("FRONTEND_URL")
@@ -182,3 +187,11 @@ async def send_email(to_email: str, otp: int):
         password=MAIL_PASSWORD
     )
 
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PORT = os.getenv("REDIS_PORT")
+REDIS_DB = os.getenv("REDIS_DB")
+
+redis_client = redis.Redis(host=REDIS_HOST,port=REDIS_PORT,db=REDIS_DB , decode_responses=True,protocol=2)
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")

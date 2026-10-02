@@ -1,34 +1,105 @@
-from fastapi import APIRouter,Depends,status,HTTPException,Request,Response
+from fastapi import APIRouter,Depends,status,HTTPException,Request,Response,BackgroundTasks
 from config import hash_password,verify_password,ACCESS_TOKEN_EXPIRY_TIME,REFRESH_TOKEN_EXPIRY_TIME,hash_refresh_token
 from sqlalchemy.orm import Session
 from database.database import get_db
-from schemas import RegistrationSchema,LoginSchema,GoogleUser
+from schemas import RegistrationSchema,LoginSchema,GoogleUser,VerifyOTP,VerifyEmail
 from models.model import User,RefreshToken
-from tokens.jwt import create_access_token,create_refresh_token,decode_access_token
+from tokens.jwt import create_access_token,create_refresh_token
 from datetime import datetime,timedelta
-from config import FRONTEND_URL,GOOGLE_REDIRECT_URI,send_email
+import json
+from config import FRONTEND_URL,send_email,generate_otp,redis_client,GOOGLE_REDIRECT_URI
 from .google_auth import oauth
 from fastapi.responses import RedirectResponse
-from typing import Optional
-import random
-
+from urllib.parse import urlencode
+from tokens.dependency import get_current_user
 
 router = APIRouter(prefix="/auth",tags=["Authentication"])
 
-@router.post("/register")
-async def register(user:RegistrationSchema,db:Session=Depends(get_db)):
+@router.post("/register", status_code=202)
+async def register(user:RegistrationSchema, background_tasks:BackgroundTasks, db:Session=Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
     if db_user:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT,detail="Email Already Existed")
-    user_data = user.model_dump()
-    user_data["password"] = hash_password(user.password)
-    new_user = User(**user_data)
-    db.add(new_user) 
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email Already Existed")
+    
+    otp = generate_otp()
+    
+    # Store pending user data + OTP in Redis for 10 minutes
+    pending_data = {
+        "name": user.name,
+        "email": user.email,
+        "password": hash_password(user.password),
+        "otp": otp
+    }
+    await redis_client.set(f"pending_register:{user.email}", json.dumps(pending_data), ex=600)
+    
+    # Send OTP email in background — user is not blocked
+    background_tasks.add_task(send_email, user.email, otp)
+    
+    return {
+        "message": f"OTP sent to {user.email}. Please verify to complete registration."
+    }
+
+
+@router.post("/verify-email")
+async def verify_email(response:Response, payload:VerifyEmail, db:Session=Depends(get_db)):
+    redis_key = f"pending_register:{payload.email}"
+    raw = await redis_client.get(redis_key)
+    
+    if not raw:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No pending registration found. OTP may have expired.")
+    
+    pending = json.loads(raw)
+    
+    if pending["otp"] != payload.otp:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect or expired OTP")
+    
+    # Check again in case someone registered between OTP send and verify
+    db_user = db.query(User).filter(User.email == payload.email).first()
+    if db_user:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email Already Existed")
+    
+    new_user = User(
+        name=pending["name"],
+        email=pending["email"],
+        password=pending["password"]
+    )
+    db.add(new_user)
     db.commit()
     db.refresh(new_user)
     
+    # Clean up Redis
+    await redis_client.delete(redis_key)
+    
+    access_token = create_access_token(new_user.id, new_user.email)
+    refresh_token, refresh_token_hash = create_refresh_token()
+    
+    refresh_token_record = RefreshToken(
+        user_id=new_user.id,
+        token_hash=refresh_token_hash,
+        expires_at=datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRY_TIME)
+    )
+    db.add(refresh_token_record)
+    db.commit()
+    
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        max_age=60 * ACCESS_TOKEN_EXPIRY_TIME
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        max_age=60 * 60 * 24 * REFRESH_TOKEN_EXPIRY_TIME
+    )
+    
     return {
-        "message":f"{user.name} Authenticated Successfully"
+        "message": f"{new_user.name} Registered & Logged In Successfully"
     }
     
 @router.post("/login")
@@ -131,9 +202,7 @@ async def refresh(request:Request,response:Response,db:Session=Depends(get_db)):
     )
     
     return {
-        "messge":f"{db_user.name}'s Refresh Token Generated Successfully",
-        "access_token":access_token,
-        "refresh_token":refresh_token
+        "message": f"{db_user.name}'s Refresh Token Generated Successfully",
     }
     
 @router.post("/logout")
@@ -184,7 +253,7 @@ def user_existed_already(existing_google_user:GoogleUser,db:Session):
     
     # Redirect to React and attach cookies
     response=RedirectResponse(
-        url="http://localhost:5173/dashboard",
+        url=f"{FRONTEND_URL}/dashboard",
         status_code=302
     )
     response.set_cookie(
@@ -204,22 +273,16 @@ def user_existed_already(existing_google_user:GoogleUser,db:Session):
         samesite="lax",
         max_age=60*60*24*REFRESH_TOKEN_EXPIRY_TIME
     )
-    return {
-    "message":"Exsited Google User Data Fetched Successfully",
-    "user_id":existing_google_user.id,
-    "name":existing_google_user.name,
-    "email":existing_google_user.email,
-    "google_id":existing_google_user.google_id,
-    "picture":existing_google_user.picture
-}   
+    return response
     
 @router.get("/google/login")
 async def google_login(request:Request):
+    # redirect_uri = request.url_for("google_callback")
     return await oauth.google.authorize_redirect(request,GOOGLE_REDIRECT_URI)
 
 
 @router.get("/google/callback")
-async def google_callback(request:Request,db:Session=Depends(get_db)):
+async def google_callback(request:Request,background_tasks:BackgroundTasks,db:Session=Depends(get_db)):
     
     token=await oauth.google.authorize_access_token(request)
 
@@ -250,16 +313,11 @@ async def google_callback(request:Request,db:Session=Depends(get_db)):
     existing_google_email = db.query(User).filter( User.email== email ).first() 
     
     if existing_google_email:
-        otp = str(random.randint(100001,1000000))
-        otp_hash = hash_password(otp)
-        try:
-            await send_email(existing_google_email.email, int(otp))
-            return RedirectResponse(url=f"{FRONTEND_URL}/verify-otp/{google_id}/{otp_hash}/{existing_google_email.email}")
-        except Exception as e:
-            raise HTTPException(
-                status_code=503,
-                detail="Unable to send verification email. Check the SMTP credentials."
-            ) 
+        otp = generate_otp()
+        await redis_client.set(f"otp:{email}", otp, ex=300)
+        background_tasks.add_task(send_email, existing_google_email.email, otp)
+        params = urlencode({"email": email, "google_id": google_id})
+        return RedirectResponse(url=f"{FRONTEND_URL}/verify-otp?{params}", status_code=302)
     
     new_google_user=User(
     name=name,
@@ -314,50 +372,67 @@ async def google_callback(request:Request,db:Session=Depends(get_db)):
 
     return response
 
-
-@router.get("/verify_otp/{google_id}/{otp_hash}/{email}/")
-async def verify_otp(response:Response, google_id:str, otp_hash:str, email:str, user_otp:Optional[str]=None, db:Session=Depends(get_db)):
     
-    if not user_otp or not verify_password(user_otp, otp_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="OTP is not correct")
-    user = db.query(User).filter(User.email==email).first()
+@router.post("/verify_otp")
+async def verify_otp(response:Response,verify_request:VerifyOTP,db:Session=Depends(get_db)):
+    redis_key = f"otp:{verify_request.email}"
+    redis_stored_opt = await redis_client.get(redis_key)
+    if not redis_stored_opt or redis_stored_opt != verify_request.otp:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Incorrect or expired Otp")
+    user = db.query(User).filter(User.email==verify_request.email).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    user.google_id = google_id
+    
+    user.google_id = verify_request.google_id
     db.commit()
     db.refresh(user)
-    
-    access_token = create_access_token(str(user.id),str(user.email))
-    refresh_token , hashed_refresh_token = create_refresh_token()
-    
-    refresh_token_data = RefreshToken(
-        user_id=user.id,
-        token_hash=hashed_refresh_token,
-        expires_at=datetime.now()+timedelta(days=REFRESH_TOKEN_EXPIRY_TIME)
+
+    # Invalidate OTP from Redis to prevent replay
+    await redis_client.delete(redis_key)
+
+    access_token=create_access_token(
+        user.id,
+        user.email
     )
-    
-    db.add(refresh_token_data)
+    raw_refresh_token,refresh_token_hash=create_refresh_token()
+    refresh_token_record=RefreshToken(
+        user_id=user.id,
+        token_hash=refresh_token_hash,
+        expires_at=datetime.utcnow()+timedelta( days=REFRESH_TOKEN_EXPIRY_TIME )
+    )
+    db.add(refresh_token_record)
     db.commit()
-    db.refresh(refresh_token_data)
+    db.refresh(refresh_token_record)
     
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
-        samesite="lax",
         secure=False,
+        samesite="lax",
         max_age=60*ACCESS_TOKEN_EXPIRY_TIME
     )
     
     response.set_cookie(
         key="refresh_token",
-        value=refresh_token,
+        value=raw_refresh_token,
         httponly=True,
-        samesite="lax",
         secure=False,
-        max_age=60*60*REFRESH_TOKEN_EXPIRY_TIME
+        samesite="lax",
+        max_age=60*60*24*REFRESH_TOKEN_EXPIRY_TIME
     )
     
     return {
-        "message":f"{user.name} Authenticated Successfully"
+        "message": f"{user.name} Authenticated Successfully"
+    }
+    
+    
+@router.get("/get/me")
+async def get_me(current_user: User = Depends(get_current_user),db:Session=Depends(get_db)):
+    user = db.query(User).filter(User.id == current_user.id).first()
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "picture":user.picture
     }
