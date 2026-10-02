@@ -278,7 +278,7 @@ def user_existed_already(existing_google_user:GoogleUser,db:Session):
 @router.get("/google/login")
 async def google_login(request:Request):
     # redirect_uri = request.url_for("google_callback")
-    return await oauth.google.authorize_redirect(request,GOOGLE_REDIRECT_URI)
+    return await oauth.google.authorize_redirect(request,"https://learnx-q48f.onrender.com/auth/google/callback")
 
 
 @router.get("/google/callback")
