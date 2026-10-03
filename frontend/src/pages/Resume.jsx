@@ -149,49 +149,35 @@ export default function Resume() {
   );
 
   // ── Chat sessions state ───────────────────────────────────
-  const defaultRecentChats = [
-    {
-      id: "sample_1",
-      title: "House Price Prediction",
-      messages: [],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: "sample_2",
-      title: "FastAPI Deployment",
-      messages: [],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: "sample_3",
-      title: "Machine Learning Guide",
-      messages: [],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: "sample_4",
-      title: "Explain Docker Bind Mount",
-      messages: [],
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: "sample_5",
-      title: "Resume Analysis",
-      messages: [],
-      createdAt: new Date().toISOString(),
-    },
-  ];
+  const sanitizeSessions = (sessions) => {
+    if (!Array.isArray(sessions)) return [];
+    return sessions.filter(
+      (c) =>
+        !c.id?.startsWith("sample_") &&
+        ![
+          "House Price Prediction",
+          "FastAPI Deployment",
+          "Machine Learning Guide",
+          "Explain Docker Bind Mount",
+          "Resume Analysis",
+        ].includes(c.title)
+    );
+  };
 
   const [chatSessions, setChatSessions] = useState(() => {
     try {
       const saved = localStorage.getItem(getChatsStorageKey());
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        const cleaned = sanitizeSessions(parsed);
+        if (cleaned.length !== parsed.length) {
+          localStorage.setItem(getChatsStorageKey(), JSON.stringify(cleaned));
+        }
+        return cleaned;
       }
-      return defaultRecentChats;
+      return [];
     } catch {
-      return defaultRecentChats;
+      return [];
     }
   });
 
@@ -232,6 +218,28 @@ export default function Resume() {
       console.warn("Failed to persist chats:", err);
     }
   };
+
+  // Clean up any residual sample chats from storage
+  useEffect(() => {
+    try {
+      const keysToClean = [getChatsStorageKey(), "rag_chats_"];
+      keysToClean.forEach((k) => {
+        const raw = localStorage.getItem(k);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const cleaned = sanitizeSessions(parsed);
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem(k, JSON.stringify(cleaned));
+            if (k === getChatsStorageKey()) {
+              setChatSessions(cleaned);
+            }
+          }
+        }
+      });
+    } catch {
+      // ignore
+    }
+  }, [userPrefix]);
 
   // ── Switch Chat Session ───────────────────────────────────
   const handleSelectChat = (chat) => {
@@ -611,40 +619,46 @@ export default function Resume() {
           </div>
 
           <div className="space-y-1">
-            {displayedChats.map((chat) => {
-              const isActive = activeChatId === chat.id;
-              return (
-                <div
-                  key={chat.id}
-                  onClick={() => handleSelectChat(chat)}
-                  className={`group flex items-center justify-between px-3 py-2 rounded-xl text-xs cursor-pointer transition-all ${
-                    isActive
-                      ? "bg-blue-600/20 text-white font-medium border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
-                      : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <MessageSquare
-                      className={`w-3.5 h-3.5 shrink-0 ${
-                        isActive ? "text-blue-400" : "text-zinc-500"
-                      }`}
-                    />
-                    <span className="truncate max-w-[155px]">
-                      {chat.title}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={(e) => handleDeleteChat(e, chat.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all cursor-pointer"
-                    title="Delete chat"
+            {displayedChats.length === 0 ? (
+              <div className="px-3 py-4 text-center text-xs text-zinc-500">
+                No recent chats
+              </div>
+            ) : (
+              displayedChats.map((chat) => {
+                const isActive = activeChatId === chat.id;
+                return (
+                  <div
+                    key={chat.id}
+                    onClick={() => handleSelectChat(chat)}
+                    className={`group flex items-center justify-between px-3 py-2 rounded-xl text-xs cursor-pointer transition-all ${
+                      isActive
+                        ? "bg-blue-600/20 text-white font-medium border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
+                    }`}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              );
-            })}
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <MessageSquare
+                        className={`w-3.5 h-3.5 shrink-0 ${
+                          isActive ? "text-blue-400" : "text-zinc-500"
+                        }`}
+                      />
+                      <span className="truncate max-w-[155px]">
+                        {chat.title}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteChat(e, chat.id)}
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all cursor-pointer"
+                      title="Delete chat"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                );
+              })
+            )}
           </div>
 
           {chatSessions.length > 5 && (
