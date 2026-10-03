@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
@@ -8,6 +8,7 @@ import {
   User,
   Mail,
   LogOut,
+  Loader2,
   FileText,
   TrendingUp,
   Cpu,
@@ -20,10 +21,18 @@ import {
 export default function Dashboard() {
   const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
+  const [signingOut, setSigningOut] = useState(false);
 
   const handleSignOut = async () => {
-    await logout();
-    navigate("/login");
+    setSigningOut(true);
+    try {
+      await logout();
+      navigate("/login");
+    } catch (err) {
+      console.error("Sign out failed:", err);
+    } finally {
+      setSigningOut(false);
+    }
   };
 
   if (loading) {
@@ -85,11 +94,22 @@ export default function Dashboard() {
               <span>My Profile</span>
             </Link>
             <button
+              type="button"
               onClick={handleSignOut}
-              className="px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 hover:text-rose-200 text-xs font-medium transition-all flex items-center gap-2 cursor-pointer"
+              disabled={signingOut}
+              className="px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 disabled:opacity-60 disabled:cursor-not-allowed border border-rose-500/30 text-rose-300 hover:text-rose-200 text-xs font-medium transition-all flex items-center gap-2 cursor-pointer"
             >
-              <LogOut className="w-4 h-4" />
-              <span>Log out</span>
+              {signingOut ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-rose-400" />
+                  <span>Signing out...</span>
+                </>
+              ) : (
+                <>
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
+                </>
+              )}
             </button>
           </div>
         </div>

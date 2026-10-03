@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   ArrowRight,
+  Loader2,
 } from "lucide-react";
 import RubberSegment from "./react-bits/RubberSegment";
 import { useAuth } from "../context/AuthContext";
@@ -25,6 +26,7 @@ export default function Navbar({ user: propUser, setUser: propSetUser }) {
 
   const [internalUser, setInternalUser] = useState(null);
   const [siderOpen, setSiderOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -52,15 +54,22 @@ export default function Navbar({ user: propUser, setUser: propSetUser }) {
   }, []);
 
   const handleLogout = async () => {
-    if (auth?.logout) {
-      await auth.logout();
-    } else {
-      setUser(null);
-      localStorage.removeItem("learnx_user");
-      localStorage.removeItem("learnx_token");
+    setLoggingOut(true);
+    try {
+      if (auth?.logout) {
+        await auth.logout();
+      } else {
+        setUser(null);
+        localStorage.removeItem("learnx_user");
+        localStorage.removeItem("learnx_token");
+      }
+      setSiderOpen(false);
+      navigate("/");
+    } catch (err) {
+      console.error("Sign out failed:", err);
+    } finally {
+      setLoggingOut(false);
     }
-    setSiderOpen(false);
-    navigate("/");
   };
 
   const navSegmentItems = [
@@ -320,11 +329,21 @@ export default function Navbar({ user: propUser, setUser: propSetUser }) {
               {user ? (
                 <button
                   type="button"
+                  disabled={loggingOut}
                   onClick={handleLogout}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 disabled:opacity-60 disabled:cursor-not-allowed border border-rose-500/20 transition-all cursor-pointer"
                 >
-                  <LogOut className="w-4 h-4" />
-                  <span>Sign Out</span>
+                  {loggingOut ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-rose-400" />
+                      <span>Signing out...</span>
+                    </>
+                  ) : (
+                    <>
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out</span>
+                    </>
+                  )}
                 </button>
               ) : (
                 <div className="grid grid-cols-2 gap-2.5">

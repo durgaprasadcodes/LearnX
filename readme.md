@@ -1,686 +1,350 @@
-# Production-Grade Authentication System
+<div align="center">
 
-A production-oriented authentication system built incrementally using:
+# 🚀 LearnX
 
-- FastAPI
-- React
-- MySQL
-- SQLAlchemy
-- Alembic
-- JWT
-- HttpOnly Cookies
-- Google OAuth 2.0
-- Secure refresh-token rotation
-- Email OTP verification
+### Stop guessing what's in a resume. **Ask it.**
 
-This project is being developed step by step to understand how a complete authentication architecture works from the database layer to production deployment.
+**AI-powered resume intelligence & career guidance, built on a RAG pipeline that answers with citations, not hallucinations.**
 
----
+[![Live Demo](https://img.shields.io/badge/▶_Live_Demo-learnx--skillbridge.vercel.app-7c3aed?style=for-the-badge&logo=vercel&logoColor=white)](https://learnx-skillbridge.vercel.app)
+[![API Docs](https://img.shields.io/badge/⚡_API_Docs-Swagger-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://learnx-q48f.onrender.com/docs)
+[![GitHub](https://img.shields.io/badge/Source-durgaprasadcodes%2FLearnX-181717?style=for-the-badge&logo=github)](https://github.com/durgaprasadcodes/LearnX)
 
-## 🚀 Project Architecture
+![React](https://img.shields.io/badge/React_19-61DAFB?logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/Vite_8-646CFF?logo=vite&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind_v4-06B6D4?logo=tailwindcss&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?logo=langchain&logoColor=white)
+![Gemini](https://img.shields.io/badge/Google_Gemini-4285F4?logo=google&logoColor=white)
+![FAISS](https://img.shields.io/badge/FAISS-0467DF?logo=meta&logoColor=white)
+![Postgres](https://img.shields.io/badge/Supabase_Postgres-3ECF8E?logo=supabase&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
-```text
-                    ┌───────────────┐
-                    │     React     │
-                    └───────┬───────┘
-                            │
-              ┌─────────────┴─────────────┐
-              │                           │
-        Email/Password              Google OAuth
-              │                           │
-              └─────────────┬─────────────┘
-                            ▼
-                    ┌───────────────┐
-                    │    FastAPI    │
-                    └───────┬───────┘
-                            │
-                   Access + Refresh
-                            │
-                            ▼
-                       ┌────────┐
-                       │  MySQL │
-                       └────────┘
-```
+<!-- 👉 REPLACE with your demo GIF or a 60–90s video thumbnail. This is the single highest-impact asset in this README. -->
+<!-- [![Watch the demo](./screenshots/demo-thumbnail.png)](YOUR_VIDEO_LINK) -->
+
+**[🌐 Try it live](https://learnx-skillbridge.vercel.app)** · **[⚡ Explore the API](https://learnx-q48f.onrender.com/docs)** · **[🏗️ Architecture](#-architecture)** · **[🔐 Security](#-security-by-design)**
+
+</div>
 
 ---
 
-## 📚 Development Roadmap
+## 💡 The Problem
 
-```
-STEP 1  → FastAPI + MySQL connection
-STEP 2  → User model + Alembic
-STEP 3  → RefreshToken model + migration
-STEP 4  → Password hashing + registration
-STEP 5  → Email/password login
-STEP 6  → Access JWT
-STEP 7  → Refresh-token generation + secure storage
-STEP 8  → /auth/refresh + token rotation
-STEP 9  → Logout + revocation
-STEP 10 → Protected endpoints
-STEP 11 → Google OAuth
-STEP 12 → Connect Google users to MySQL
-STEP 13 → React authentication
-STEP 14 → React token refresh/interceptor
-STEP 15 → Production CORS/cookies/HTTPS
-STEP 16 → Full authentication testing
-STEP 17 → Production deployment
-```
+Recruiters skim **hundreds of resumes** and spend seconds on each. Candidates have no idea how their resume *actually reads* against a role. Generic AI chatbots make it worse: they **hallucinate skills that were never on the page**.
+
+## ✅ The Solution
+
+**LearnX** lets you upload a PDF resume and have a conversation with it. Every answer is **grounded in the document itself** using Retrieval-Augmented Generation (RAG), and every claim comes back with the **source chunk it was retrieved from**, so you can verify instead of trust.
+
+> *"What machine learning frameworks does this candidate know?"*
+> *"Analyze skills match for a Backend Engineer role."*
+> → Answer + the exact resume passages it came from.
 
 ---
 
-## 🗄️ Database Structure
+## 🎯 Why LearnX Stands Out
 
-### Users Table
-
-```text
-users
-
-┌─────────────────────┐
-│ id                  │
-│ email               │
-│ password_hash       │
-│ google_id           │
-│ name                │
-│ picture             │
-│ is_active           │
-│ created_at          │
-│ updated_at          │
-└──────────┬──────────┘
-           │
-           │ 1 : many
-           ▼
-```
-
-### Refresh Tokens Table
-
-```text
-refresh_tokens
-
-┌─────────────────────────┐
-│ id                      │
-│ user_id                 │
-│ token_hash              │
-│ expires_at              │
-│ created_at              │
-│ revoked_at              │
-│ replaced_by             │
-└─────────────────────────┘
-```
-
-### Relationship
-
-One user can have multiple refresh tokens.
-
-```text
-One User
-   │
-   ├── Refresh Token 1
-   ├── Refresh Token 2
-   └── Refresh Token 3
-```
-
-This supports multiple devices and sessions.
+| | Typical resume chatbot | **LearnX** |
+|:--|:--|:--|
+| **Answers grounded in the document** | ❌ Often hallucinated | ✅ RAG over the uploaded PDF |
+| **Verifiable output** | ❌ No sources | ✅ Source-chunk citations |
+| **Speed** | ⏳ Re-sends the whole doc to the LLM | ⚡ FAISS retrieves only relevant chunks |
+| **Mobile login reliability** | ❌ Breaks on iOS Safari / Android Chrome | ✅ Dual-layer auth, no cross-domain cookie loss |
+| **Security** | ❌ Plain tokens, weak hashing | ✅ Argon2, hashed rotating refresh tokens, Redis-TTL OTPs |
+| **Production-ready** | ❌ Demo-grade | ✅ Deployed: Vercel + Render + Supabase |
 
 ---
 
-## 🔐 Authentication Strategy
+## ✨ Key Features
 
-The application uses:
+### 🧠 1. AI Resume Intelligence (RAG)
+- **Fast ingestion:** multi-page PDFs parsed with **PyMuPDF** and split into contextual chunks.
+- **Semantic indexing:** chunks embedded with **Google Gemini** (`text-embedding-004`) and stored in a **FAISS** vector index, one per uploaded resume.
+- **Grounded answers:** the top-matching chunks are assembled into context by **LangChain**, and the LLM answers *only* from that context.
+- **Citations:** each response returns the source passages so users can verify it.
 
-```
-Access Token  → Short-lived JWT
-Refresh Token → Long-lived random token
-```
+### 🔐 2. Dual-Layer Authentication: *zero cross-domain cookie loss*
+Modern mobile browsers (iOS Safari ITP, Android Chrome) block third-party cookies between `vercel.app` and `onrender.com`, so a cookie-only login silently logs users out.
 
-Both tokens are stored in:
+**Our fix:** the backend sets **HttpOnly cookies *and* issues a JWT Bearer token**. The frontend caches it and attaches `Authorization: Bearer <token>` through an Axios interceptor with a **refresh-queue** (concurrent 401s trigger a single refresh).
+**Result:** reliable sessions on iPhone, Android, tablets and laptops, even across Google OAuth redirects.
 
-```
-HttpOnly Cookies
-```
+### 🪪 3. Google OAuth 2.0 + Email OTP
+Sign in with Google (Authlib / OpenID Connect) or register with email + password and verify via a one-time code stored in **Redis with a short TTL** (never in the primary database).
 
-The browser automatically sends the cookies with requests.
-The frontend does not directly access the tokens using JavaScript.
-
-### Access Token
-
-The access token is a JWT containing information such as:
-
-```json
-{
-  "sub": "user_id",
-  "email": "user@example.com",
-  "type": "access",
-  "exp": "expiration_timestamp"
-}
-```
-
-Used for accessing protected endpoints.
-
-Example:
-
-```
-GET /user/me
-```
-
-### Refresh Token
-
-Refresh tokens are:
-
-- Cryptographically random
-- Stored as hashes in MySQL
-- Never stored in raw form
-- Rotated after every refresh
-- Revoked during logout
-
-```text
-Raw Refresh Token
-       ↓
-SHA-256 Hash
-       ↓
-Store Hash in MySQL
-```
-
-The raw refresh token is only sent to the browser through an HttpOnly cookie.
+### 🎨 4. Premium, Responsive UI
+Glassmorphic dark theme (Obsidian Purple & Black), **WebGL shader hero** (OGL), an **interactive 3D globe** (Cobe), **Framer Motion** transitions, **Lenis** 60 FPS smooth scroll, and a slide-out **Sider drawer** for one-tap navigation on mobile.
 
 ---
 
-## 🔄 Refresh Token Rotation
+## 🏗️ Architecture
 
-```text
-Client sends refresh token
-          ↓
-Backend hashes received token
-          ↓
-Find token hash in database
-          ↓
-Check expiration
-          ↓
-Check revoked_at
-          ↓
-Revoke old token
-          ↓
-Generate new refresh token
-          ↓
-Store new token hash
-          ↓
-Set new cookies
+```mermaid
+flowchart LR
+    U([👤 User]) --> FE
+
+    subgraph FE["🖥️ Frontend · Vercel"]
+        R[React 19 + Vite 8<br/>Tailwind v4 · Framer Motion]
+        AX[Axios interceptor<br/>Bearer + refresh queue]
+        R --> AX
+    end
+
+    AX -->|HTTPS · JWT + HttpOnly cookie| API
+
+    subgraph BE["⚙️ Backend · Render"]
+        API[FastAPI]
+        AUTH[Auth module<br/>Argon2 · JWT · OAuth · OTP]
+        RAG[Resume module<br/>PyMuPDF → chunk → embed]
+        API --> AUTH
+        API --> RAG
+    end
+
+    AUTH --> PG[(Supabase PostgreSQL<br/>users · refresh_token hashes)]
+    AUTH --> RD[(Redis<br/>OTP + TTL)]
+    AUTH <--> GO[Google OAuth 2.0]
+    RAG --> EM[Gemini Embeddings]
+    RAG <--> FX[(FAISS Index<br/>per resume)]
+    RAG --> LLM[Gemini LLM<br/>grounded answer + citations]
 ```
 
-This prevents long-term reuse of the same refresh token.
+### 🔎 The RAG Pipeline
 
----
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant API as FastAPI
+    participant PDF as PyMuPDF
+    participant EMB as Gemini Embeddings
+    participant FX as FAISS
+    participant LLM as Gemini LLM
 
-## 🚪 Logout Flow
+    U->>API: POST /resume/upload (PDF)
+    API->>PDF: Extract text
+    PDF-->>API: Pages → text
+    API->>EMB: Embed chunks
+    EMB-->>API: Vectors
+    API->>FX: Build & persist index
+    API-->>U: ✅ Ready
 
-```text
-User clicks Logout
-        ↓
-Backend reads refresh_token cookie
-        ↓
-Hashes refresh token
-        ↓
-Finds database record
-        ↓
-Marks token as revoked
-        ↓
-Deletes access_token cookie
-        ↓
-Deletes refresh_token cookie
-```
-
-Logout does not merely delete browser cookies. It also revokes the refresh token on the server.
-
----
-
-## 🛡️ Protected Endpoints
-
-Protected endpoints require a valid access token.
-
-Example:
-
-```
-GET /user/me
-```
-
-Flow:
-
-```text
-Request
-   ↓
-Read access_token from HttpOnly cookie
-   ↓
-Decode JWT
-   ↓
-Validate signature
-   ↓
-Validate expiration
-   ↓
-Validate token type
-   ↓
-Get user ID
-   ↓
-Fetch user
-   ↓
-Return protected data
+    U->>API: POST /resume/ask ("Skills match for Backend role?")
+    API->>EMB: Embed question
+    API->>FX: Similarity search (top-k)
+    FX-->>API: Relevant chunks
+    API->>LLM: Question + retrieved context
+    LLM-->>API: Grounded answer
+    API-->>U: Answer + source citations
 ```
 
 ---
 
-## 🌐 Google OAuth Login
+## 🔐 Security by Design
 
-### Basic Google Login Flow
+Security wasn't an afterthought. It's a core feature.
 
-```text
-Google Login
-     ↓
-Google OAuth
-     ↓
-Get Google identity
-     ↓
-Find/Create User in MySQL
-     ↓
-Generate YOUR access token
-     ↓
-Generate YOUR refresh token
-     ↓
-HttpOnly cookies
-     ↓
-/user/me
-```
-
-Google is used only to verify the user's identity.
-
-The application still generates and manages its own:
-
-- Access token
-- Refresh token
-- Sessions
-- Cookies
-- Database records
-
-Google tokens are not used as the application's own access tokens.
+| Threat | Defense |
+|:--|:--|
+| GPU brute-force on leaked hashes | **Argon2** (memory-hard) via `pwdlib` |
+| Stolen refresh token | Stored as **SHA-256 hash**, **rotated on every use**, **auto-revoked on reuse** |
+| XSS token theft | **HttpOnly** cookies for the session layer |
+| Mobile third-party cookie blocking | **Dual-layer auth** (cookie + Bearer) |
+| OTP leakage / replay | Short-TTL **Redis** storage, never persisted as plaintext in the main DB |
+| Unauthorized access | JWT-protected routes through a single dual-auth dependency |
 
 ---
 
-## 🔎 Google OAuth Account Decision Flow
+## 🛠️ Tech Stack
 
-```text
-Continue with Google
-        |
-        v
-Google OAuth callback
-        |
-        v
-Is Google email verified?
-        |
-        ├── No → Reject
-        |
-        └── Yes
-              |
-              v
-       Does google_id exist?
-              |
-              ├── Yes → Login
-              |
-              └── No
-                    |
-                    v
-             Does email exist?
-                    |
-                    ├── No
-                    |    → Create Google user
-                    |    → Login
-                    |
-                    └── Yes
-                         → Send OTP
-                         → Pending linking state
-                         → Verify OTP
-                         → Link Google ID
-                         → Login
-```
+<table>
+<tr><th>Layer</th><th>Technology</th><th>Why we chose it</th></tr>
+
+<tr><td rowspan="8"><b>Frontend</b></td><td>React 19</td><td>Concurrent rendering, modern UI primitives</td></tr>
+<tr><td>Vite 8</td><td>Instant HMR, fast builds</td></tr>
+<tr><td>Tailwind CSS v4</td><td>Utility-first styling for the Obsidian dark theme</td></tr>
+<tr><td>Framer Motion</td><td>Fluid transitions and spring physics</td></tr>
+<tr><td>Lenis</td><td>60 FPS smooth scrolling</td></tr>
+<tr><td>Cobe + OGL</td><td>Lightweight 3D globe and WebGL shaders</td></tr>
+<tr><td>Axios</td><td>Bearer interceptor with refresh queuing</td></tr>
+<tr><td>Lucide React</td><td>Consistent SVG icons</td></tr>
+
+<tr><td rowspan="10"><b>Backend</b></td><td>FastAPI</td><td>Async, high-throughput, auto OpenAPI docs</td></tr>
+<tr><td>LangChain</td><td>Chunking, embeddings, context assembly</td></tr>
+<tr><td>Google Gemini</td><td>LLM + <code>text-embedding-004</code> embeddings</td></tr>
+<tr><td>FAISS</td><td>Fast in-memory vector similarity search</td></tr>
+<tr><td>PyMuPDF</td><td>Fast, accurate PDF text extraction</td></tr>
+<tr><td>Supabase PostgreSQL</td><td>Managed relational store for users and token hashes</td></tr>
+<tr><td>Redis</td><td>TTL-based OTP and rate-limit cache</td></tr>
+<tr><td>SQLAlchemy 2.0 + Alembic</td><td>ORM and versioned migrations</td></tr>
+<tr><td>Authlib + Starlette</td><td>Google OAuth 2.0 / OpenID Connect</td></tr>
+<tr><td>Pwdlib (Argon2)</td><td>Secure password hashing</td></tr>
+
+<tr><td><b>Deploy</b></td><td>Vercel · Render · Supabase</td><td>Free-tier friendly, production URLs live</td></tr>
+</table>
 
 ---
 
-## 👤 Google User Cases
+## 📸 Screenshots
 
-The system handles the following cases:
+| 🖥️ Landing & 3D Hero | 📄 Resume Workspace | 👤 Profile & Sessions |
+| :---: | :---: | :---: |
+| ![Landing](./screenshots/home.png) | ![Resume](./screenshots/resume.png) | ![Profile](./screenshots/profile.png) |
+| WebGL shader hero + interactive globe | RAG chat with source citations | Secure session management |
 
-### Case 1 — Existing Google User
-
-```text
-Google ID exists in database
-        ↓
-Find user using google_id
-        ↓
-Generate access token
-        ↓
-Generate refresh token
-        ↓
-Set cookies
-        ↓
-Login successful
-```
-
-### Case 2 — New Google User
-
-```text
-Google ID does not exist
-        ↓
-Email does not exist
-        ↓
-Create new user
-        ↓
-Store:
-    - name
-    - email
-    - google_id
-    - picture
-    - password = NULL
-        ↓
-Generate tokens
-        ↓
-Login successful
-```
-
-### Case 3 — Existing Email/Password User
-
-```text
-User registered using email/password
-        ↓
-Tries Google login with same email
-        ↓
-Google ID does not exist in DB
-        ↓
-Email already exists in DB
-        ↓
-Do not automatically link accounts
-        ↓
-Send OTP to existing email
-```
-
-This prevents unauthorized account linking.
+| 📱 Mobile Drawer | 🔐 Authentication | ⚡ Live Q&A |
+| :---: | :---: | :---: |
+| ![Mobile](./screenshots/mobile-sider.png) | ![Auth](./screenshots/auth.png) | ![Chat](./screenshots/chat.png) |
+| Slide-out navigation | Google OAuth + Email OTP | Instant vector-search answers |
 
 ---
 
-## 🔗 Google Account Linking with OTP
+## 📡 API Reference
 
-```text
-User registered using email/password
-            ↓
-Tries Google login with same email
-            ↓
-Google ID does not exist in DB
-            ↓
-Email already exists in DB
-            ↓
-Generate OTP
-            ↓
-Send OTP to that email
-            ↓
-Create pending linking state
-            ↓
-Redirect user to React /verify-otp page
-            ↓
-User enters OTP
-            ↓
-React sends OTP to FastAPI
-            ↓
-FastAPI verifies OTP
-            ↓
-OTP correct?
-       ├── No → Reject
-       └── Yes
-             ↓
-      Link Google ID
-             ↓
-      Generate access token
-             ↓
-      Generate refresh token
-             ↓
-      Set HttpOnly cookies
-             ↓
-      Login successful
-```
+Full interactive docs: **[Swagger UI](https://learnx-q48f.onrender.com/docs)**
+
+| Method | Endpoint | Description |
+| :--: | :-- | :-- |
+| `POST` | `/auth/register` | Register and issue access + refresh tokens |
+| `POST` | `/auth/login` | Authenticate; returns profile + Bearer token |
+| `GET` | `/auth/google/login` | Start Google OAuth 2.0 flow |
+| `GET` | `/auth/google/callback` | Handle callback and redirect with token |
+| `POST` | `/auth/verify-email` | Verify email OTP (Redis-backed) |
+| `POST` | `/auth/refresh` | Rotate refresh token, issue new access token |
+| `GET` | `/auth/get/me` | Fetch authenticated user profile |
+| `POST` | `/auth/logout` | Revoke refresh token, clear credentials |
+| `POST` | `/resume/upload` | Ingest PDF → extract → build FAISS index |
+| `POST` | `/resume/ask` | Semantic search → grounded answer with citations |
 
 ---
 
-## ✉️ Email OTP System
+## 🚀 Run It Locally
 
-For the current testing implementation, OTPs use temporary in-memory storage.
+**Prerequisites:** Node.js ≥ 18 · Python ≥ 3.11 · a Supabase (PostgreSQL) project · Redis · Google Gemini API key · Google OAuth credentials
 
-This is intentionally being used only for development/testing.
+### 1️⃣ Clone
 
-```text
-Generate OTP
-     ↓
-Store OTP temporarily
-     ↓
-Set 60-second expiry
-     ↓
-Send OTP through email
-     ↓
-User enters OTP
-     ↓
-Verify OTP
-     ↓
-Delete OTP after successful verification
+```bash
+git clone https://github.com/durgaprasadcodes/LearnX.git
+cd LearnX
 ```
 
-Example temporary storage:
+### 2️⃣ Backend
 
-```python
-otp_store[email] = {
-    "otp": otp,
-    "google_id": google_id,
-    "expires_at": time.time() + 60
-}
+```bash
+cd backend
+
+# create & activate a virtual environment
+python -m venv venv
+# Windows (PowerShell):  .\venv\Scripts\activate
+# macOS / Linux:         source venv/bin/activate
+
+pip install -r requirements.txt
 ```
 
-OTP generation uses Python's `secrets` module:
-
-```python
-import secrets
-
-otp = str(secrets.randbelow(1000000)).zfill(6)
-```
-
-### Current Testing Limitation
-
-In-memory OTP storage:
-
-- Is lost when the server restarts
-- Is not suitable for multiple backend instances
-- Is not production-ready
-- Is being used only to complete and test Google OAuth
-
-For production systems, Redis with TTL will be used later.
-
----
-
-## 📧 Email Sending
-
-Email is sent using SMTP through `aiosmtplib`.
-
-The email service supports:
-
-- Plain-text emails
-- HTML emails
-- OTP emails
-- Password reset emails
-- Verification emails
-
-Example HTML email structure:
-
-```python
-message.set_content(plain_body)
-message.add_alternative(html_body, subtype="html")
-```
-
-SMTP credentials are stored in `.env`.
+Create `backend/.env`:
 
 ```env
-MAIL_USERNAME=your_email@gmail.com
-MAIL_PASSWORD=your_google_app_password
-MAIL_FROM=your_email@gmail.com
-MAIL_SERVER=smtp.gmail.com
-MAIL_PORT=587
+FRONTEND_URL=http://localhost:5173
+SUPABASE_DATABASE_URL=postgresql+psycopg2://user:password@host:5432/dbname
+SECRET_KEY=your_super_secret_jwt_key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRY_TIME=15
+REFRESH_TOKEN_EXPIRY_TIME=7
+
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+GOOGLE_SESSION_SECRET=your_session_secret
+
+REDIS_HOST=your_redis_host
+REDIS_PORT=6379
+REDIS_PASSWORD=your_redis_password
+
+GEMINI_API_KEY=your_gemini_api_key
 ```
+
+```bash
+alembic upgrade head
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+📖 Swagger docs → `http://localhost:8000/docs`
+
+### 3️⃣ Frontend
+
+```bash
+cd frontend
+npm install
+echo "VITE_API_URL=http://localhost:8000" > .env
+npm run dev
+```
+
+🌐 App → `http://localhost:5173`
 
 ---
 
-## 🧭 Frontend OTP Flow
-
-The frontend contains a route such as:
-
-```
-/verify-otp
-```
-
-Flow:
+## 📂 Project Structure
 
 ```text
-Google callback
-      ↓
-OTP sent
-      ↓
-Redirect:
-http://localhost:5173/verify-otp
-      ↓
-User enters OTP
-      ↓
-POST /auth/google/verify-otp
-      ↓
-Backend validates OTP
-      ↓
-Google ID linked
-      ↓
-Authentication cookies created
-      ↓
-Redirect to dashboard
-```
-
-Opening `/verify-otp` manually should not grant access.
-
-The backend must verify that an active OTP verification session exists.
-
-```text
-No pending OTP session
-        ↓
-Reject verification request
+LearnX/
+├── backend/
+│   ├── alembic/              # DB migrations
+│   ├── auth/                 # Register, login, OTP, refresh, Google OAuth
+│   ├── database/             # SQLAlchemy engine & session
+│   ├── faiss_indexes/        # Per-resume vector stores
+│   ├── models/               # User & RefreshToken ORM models
+│   ├── resume/               # PDF parsing, FAISS indexing, QA endpoints
+│   ├── tokens/               # JWT + dual-auth dependency (cookie / Bearer)
+│   ├── config.py             # Env, mailer, CORS
+│   ├── main.py               # App init & middleware
+│   └── schemas.py            # Pydantic schemas
+│
+└── frontend/
+    └── src/
+        ├── components/       # Hero, Navbar, 3D globe, WebGL shaders
+        ├── context/          # AuthContext (session + OAuth token capture)
+        ├── pages/            # Home, Resume, Profile, Login, Register
+        ├── services/         # Axios client + refresh queue
+        └── App.jsx           # Routes, ProtectedRoute, Lenis
 ```
 
 ---
 
-## 🔒 Security Considerations
+## 🧗 Challenges We Solved
 
-Important security principles used in this project:
-
-- Passwords are hashed using `pwdlib`
-- Raw refresh tokens are never stored in MySQL
-- Refresh tokens are hashed using SHA-256
-- Refresh tokens are rotated
-- Revoked refresh tokens cannot be reused
-- Access tokens are short-lived
-- Tokens are stored in HttpOnly cookies
-- Google email verification is checked
-- Existing accounts are not automatically linked
-- OTP is required for account linking
-- OTP has a limited lifetime
-- OTP is deleted after successful verification
-- Sensitive credentials are stored in `.env`
-- Google OAuth credentials are never exposed to React
-- Production cookies will use HTTPS and Secure flags
-- CORS will be restricted to trusted frontend origins
+1. **Mobile login loops.** iOS Safari and Android Chrome drop third-party cookies. We built a **dual-layer auth model** so sessions survive across `vercel.app` ↔ `onrender.com`.
+2. **Hallucinated resume claims.** Instead of prompting an LLM with a whole PDF, we use **RAG with FAISS** so answers come only from retrieved chunks, with citations.
+3. **Race conditions on token refresh.** Parallel requests hitting an expired token caused refresh storms. A **request queue in the Axios interceptor** makes it a single refresh.
+4. **Safe token storage.** Refresh tokens are **hashed, rotated, and revoked on reuse**, so a leaked database does not leak live sessions.
 
 ---
 
-## 🧪 Testing Checklist
+## 🗺️ Roadmap
 
-### Email/Password Authentication
-
-- [X] Register new user
-- [x] Reject duplicate email
-- [x] Reject incorrect password
-- [x] Login successfully
-- [x] Access protected endpoint
-- [x] Reject missing access token
-- [x] Refresh access token
-- [x] Rotate refresh token
-- [x] Reject reused refresh token
-- [x] Logout successfully
-- [x] Reject revoked refresh token
-
-
-### Google OAuth
-
-- [x] Login with new Google account
-- [x] Create Google user in MySQL
-- [x] Login with existing Google user
-- [x] Reject unverified Google email
-- [x] Detect existing email/password account
-- [x] Send OTP
-- [x] Redirect to frontend OTP page
-- [x] Reject incorrect OTP
-- [x] Reject expired OTP
-- [x] Verify correct OTP
-- [x] Link Google ID
-- [x] Login after successful linking
-- [x] Confirm access/refresh cookies
-- [x] Confirm /user/me
+- [ ] Job-description ↔ resume **match score** with gap analysis
+- [ ] **Personalized learning roadmaps** from detected skill gaps
+- [ ] Multi-resume comparison for recruiters
+- [ ] OTP rate limiting, attempt caps, and resend cooldown
+- [ ] Docker + CI/CD pipeline
+- [ ] Streaming responses (SSE) for token-by-token answers
 
 ---
 
-## 🏗️ Future Production Improvements
+## 👥 Team
 
-The current testing implementation will later be upgraded with:
-
-- Redis OTP storage with TTL
-- OTP rate limiting
-- OTP attempt limits
-- OTP resend cooldown
-- CSRF protection
-- Secure cookie configuration
-- HTTPS
-- Strict production CORS
-- Better email provider
-- Structured logging
-- Error monitoring
-- Automated tests
-- Docker deployment
-- CI/CD
-- Production database configuration
-- Deployment on Render/Vercel
+| | |
+|:--|:--|
+| **Durga Prasad** | Full-stack architecture · AI RAG pipeline · UI/UX design · [@durgaprasadcodes](https://github.com/durgaprasadcodes) |
 
 ---
 
-## 🎯 Project Goal
+## 📄 License
 
-The goal is not just to make login work.
+Built for the **Nexlayer Hackathon** and released under the [MIT License](LICENSE).
 
-The goal is to understand and implement a complete authentication architecture involving:
+<div align="center">
 
-```text
-Database Design
-      ↓
-Password Security
-      ↓
-JWT Authentication
-      ↓
-Refresh Token Security
-      ↓
-Session Revocation
-      ↓
-Google OAuth
-      ↓
-Account Linking
-      ↓
-OTP Verification
-      ↓
-React Integration
-      ↓
-Production Security
-      ↓
-Deployment
-```
+**If LearnX impressed you, drop a ⭐ on the repo.**
 
-This project is being built incrementally, with each authentication concept implemented, tested, and understood before moving to the next stage.
+</div>
