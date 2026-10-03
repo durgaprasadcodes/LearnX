@@ -528,8 +528,8 @@ export default function Resume() {
             </div>
             <div>
               <div className="flex items-center text-base font-extrabold tracking-tight">
-                <span className="text-white">RAG</span>
-                <span className="text-blue-400">Chat</span>
+                <span className="text-white">Learn</span>
+                <span className="text-blue-400">X</span>
               </div>
               <p className="text-[10px] text-zinc-400 font-medium -mt-0.5">
                 Your AI Workspace
