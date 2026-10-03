@@ -45,6 +45,7 @@ app.add_middleware(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|.*\.vercel\.app)(:\d+)?",
     allow_credentials=True,
     allow_headers=["*"],
     allow_methods=["*"]

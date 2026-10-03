@@ -25,8 +25,27 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
+// Automatically attach Bearer token if present
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("learnx_token");
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // If response returns access_token / token, keep it synced
+    if (response.data?.access_token || response.data?.token) {
+      localStorage.setItem("learnx_token", response.data.access_token || response.data.token);
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
@@ -51,8 +70,12 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await api.post("/auth/refresh");
-        processQueue(null);
+        const refreshRes = await api.post("/auth/refresh");
+        const newToken = refreshRes.data?.access_token || refreshRes.data?.token;
+        if (newToken) {
+          localStorage.setItem("learnx_token", newToken);
+        }
+        processQueue(null, newToken);
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);

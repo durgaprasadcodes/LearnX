@@ -28,7 +28,7 @@ def generate_otp():
 SUPABASE_DATABASE_URL=os.getenv("SUPABASE_DATABASE_URL")
 SECRET_KEY=os.getenv("SECRET_KEY")
 ALGORITHM=os.getenv("ALGORITHM")
-FRONTEND_URL=os.getenv("FRONTEND_URL")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
 
 raw_origins = os.getenv("ALLOWED_ORIGINS", '["http://localhost:3000","http://localhost:5173"]')
 try:
@@ -36,7 +36,7 @@ try:
 except Exception:
     origins_list = []
 
-ALLOWED_ORIGINS = list(set(origins_list + ["http://localhost:3000", "http://localhost:5173", "https://learnx-skillbridge.vercel.app"]))
+ALLOWED_ORIGINS = list(set(origins_list + ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173", "https://learnx-skillbridge.vercel.app"]))
 ACCESS_TOKEN_EXPIRY_TIME=int(os.getenv("ACCESS_TOKEN_EXPIRY_TIME"))
 REFRESH_TOKEN_EXPIRY_TIME=int(os.getenv("REFRESH_TOKEN_EXPIRY_TIME"))
 

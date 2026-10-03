@@ -60,6 +60,8 @@ async def register(response: Response, user: RegistrationSchema, db: Session = D
     
     return {
         "message": f"{new_user.name} Registered & Logged In Successfully",
+        "access_token": access_token,
+        "token": access_token,
         "user": {
             "id": new_user.id,
             "name": new_user.name,
@@ -98,7 +100,18 @@ async def verify_email(response:Response, payload:VerifyEmail, db:Session=Depend
             secure=True,
             max_age=60 * 60 * 24 * REFRESH_TOKEN_EXPIRY_TIME
         )
-        return {"message": f"{db_user.name} Logged In Successfully"}
+        return {
+            "message": f"{db_user.name} Logged In Successfully",
+            "access_token": access_token,
+            "token": access_token,
+            "user": {
+                "id": db_user.id,
+                "name": db_user.name,
+                "email": db_user.email,
+                "picture": db_user.picture,
+                "image_url": db_user.picture
+            }
+        }
     return {"message": "Verification completed"}
     
 @router.post("/login")
@@ -139,7 +152,16 @@ async def login(response:Response,user:LoginSchema,db:Session=Depends(get_db)):
     )
     
     return {
-        "message": f"{db_user.name} Logged In Successfully"
+        "message": f"{db_user.name} Logged In Successfully",
+        "access_token": access_token,
+        "token": access_token,
+        "user": {
+            "id": db_user.id,
+            "name": db_user.name,
+            "email": db_user.email,
+            "picture": db_user.picture,
+            "image_url": db_user.picture
+        }
     }
     
 @router.post("/refresh")
@@ -202,6 +224,8 @@ async def refresh(request:Request,response:Response,db:Session=Depends(get_db)):
     
     return {
         "message": f"{db_user.name}'s Refresh Token Generated Successfully",
+        "access_token": access_token,
+        "token": access_token,
     }
     
 @router.post("/logout")
@@ -250,9 +274,16 @@ def user_existed_already(existing_google_user:GoogleUser,db:Session):
     db.add(refresh_token_record)
     db.commit()
     
-    # Redirect to React and attach cookies
-    response=RedirectResponse(
-        url=f"{FRONTEND_URL}/",
+    # Redirect to React and attach cookies & query params for mobile compatibility
+    params = urlencode({
+        "token": access_token,
+        "user_id": str(existing_google_user.id),
+        "name": existing_google_user.name or "",
+        "email": existing_google_user.email or "",
+        "picture": existing_google_user.picture or "",
+    })
+    response = RedirectResponse(
+        url=f"{FRONTEND_URL}/?{params}",
         status_code=302
     )
     response.set_cookie(
@@ -347,10 +378,17 @@ async def google_callback(request:Request,background_tasks:BackgroundTasks,db:Se
     db.commit()
     db.refresh(refresh_token_record)
     
-    response=RedirectResponse(
-    url=f"{FRONTEND_URL}/",
-    status_code=302
-)
+    params = urlencode({
+        "token": access_token,
+        "user_id": str(new_google_user.id),
+        "name": new_google_user.name or "",
+        "email": new_google_user.email or "",
+        "picture": new_google_user.picture or "",
+    })
+    response = RedirectResponse(
+        url=f"{FRONTEND_URL}/?{params}",
+        status_code=302
+    )
 
     response.set_cookie(
         key="access_token",
@@ -418,7 +456,16 @@ async def verify_otp(response:Response,verify_request:VerifyOTP,db:Session=Depen
     )
     
     return {
-        "message": f"{user.name} Authenticated Successfully"
+        "message": f"{user.name} Authenticated Successfully",
+        "access_token": access_token,
+        "token": access_token,
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "picture": user.picture,
+            "image_url": user.picture
+        }
     }
     
     

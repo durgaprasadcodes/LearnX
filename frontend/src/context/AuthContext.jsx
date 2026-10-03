@@ -10,6 +10,31 @@ export function AuthProvider({ children }) {
   // Check current session from backend on startup or fallback to localStorage
   const checkAuth = async () => {
     try {
+      // 1. Check if returning from Google OAuth redirect with tokens in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const tokenFromUrl = urlParams.get("token") || urlParams.get("access_token");
+      if (tokenFromUrl) {
+        localStorage.setItem("learnx_token", tokenFromUrl);
+        const urlUserId = urlParams.get("user_id");
+        const urlName = urlParams.get("name");
+        const urlEmail = urlParams.get("email");
+        const urlPicture = urlParams.get("picture");
+        if (urlEmail) {
+          const uData = {
+            id: urlUserId || undefined,
+            name: urlName || urlEmail.split("@")[0],
+            email: urlEmail,
+            picture: urlPicture || null,
+            image_url: urlPicture || null,
+          };
+          setUser(uData);
+          localStorage.setItem("learnx_user", JSON.stringify(uData));
+        }
+        // Clean URL query params so token isn't visible in browser address bar
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+
       // First try /auth/get/me (or /me)
       let res;
       try {
@@ -37,9 +62,12 @@ export function AuthProvider({ children }) {
     } catch (_) {
       // Fallback check in localStorage
       const cached = localStorage.getItem("learnx_user");
-      if (cached) {
+      const savedToken = localStorage.getItem("learnx_token");
+      if (cached && savedToken) {
         try {
-          setUser(JSON.parse(cached));
+          const parsed = JSON.parse(cached);
+          setUser(parsed);
+          return parsed;
         } catch (_) {
           setUser(null);
         }
@@ -59,6 +87,13 @@ export function AuthProvider({ children }) {
   // 1. Manual Login (email + password)
   const login = async (email, password) => {
     const res = await api.post("/auth/login", { email, password });
+    if (res.data?.access_token || res.data?.token) {
+      localStorage.setItem("learnx_token", res.data.access_token || res.data.token);
+    }
+    if (res.data?.user) {
+      setUser(res.data.user);
+      localStorage.setItem("learnx_user", JSON.stringify(res.data.user));
+    }
     await checkAuth();
     return res.data;
   };
@@ -66,6 +101,9 @@ export function AuthProvider({ children }) {
   // 2. Manual Registration (name, email, password) -> logs in user directly
   const register = async (name, email, password) => {
     const res = await api.post("/auth/register", { name, email, password });
+    if (res.data?.access_token || res.data?.token) {
+      localStorage.setItem("learnx_token", res.data.access_token || res.data.token);
+    }
     const userData = res.data?.user || {
       name: name || email.split("@")[0],
       email: email,
@@ -96,7 +134,10 @@ export function AuthProvider({ children }) {
       }
     }
 
-    const userData = {
+    if (res.data?.access_token || res.data?.token) {
+      localStorage.setItem("learnx_token", res.data.access_token || res.data.token);
+    }
+    const userData = res.data?.user || {
       name: email.split("@")[0],
       email: email,
     };
@@ -127,7 +168,10 @@ export function AuthProvider({ children }) {
       }
     }
 
-    const userData = {
+    if (res.data?.access_token || res.data?.token) {
+      localStorage.setItem("learnx_token", res.data.access_token || res.data.token);
+    }
+    const userData = res.data?.user || {
       name: email.split("@")[0],
       email: email,
     };
@@ -153,6 +197,7 @@ export function AuthProvider({ children }) {
     } catch (_) {}
     setUser(null);
     localStorage.removeItem("learnx_user");
+    localStorage.removeItem("learnx_token");
   };
 
   return (
