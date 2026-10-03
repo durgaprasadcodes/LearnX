@@ -6,7 +6,6 @@ import Navbar from "../components/Navbar";
 import {
   User,
   Mail,
-  Image as ImageIcon,
   ShieldCheck,
   CheckCircle2,
   Copy,
@@ -16,7 +15,6 @@ import {
   ArrowLeft,
   Sparkles,
   ExternalLink,
-  Code2,
   KeyRound,
   Calendar,
   AlertCircle
@@ -42,8 +40,6 @@ export default function Profile({
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
-  const [rawBackendData, setRawBackendData] = useState(null);
-  const [showJsonView, setShowJsonView] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   // Fetch freshest user data directly from backend
@@ -64,7 +60,6 @@ export default function Profile({
       }
 
       if (res.data) {
-        setRawBackendData(res.data);
         const resolvedName = res.data.name || propName || authUser?.name || "";
         const resolvedEmail = res.data.email || propEmail || authUser?.email || "";
         const resolvedImage =
@@ -93,7 +88,6 @@ export default function Profile({
           email: authUser.email || propEmail || "",
           imag_url: authUser.image_url || authUser.picture || propImagUrl || propImageUrl || "",
         });
-        setRawBackendData(authUser);
       } else {
         setErrorMsg("Failed to synchronize with backend. Please ensure backend server is running.");
       }
@@ -155,15 +149,7 @@ export default function Profile({
               title="Fetch latest data from /me endpoint"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
-              <span>{refreshing ? "Syncing..." : "Sync Backend Data"}</span>
-            </button>
-
-            <button
-              onClick={() => setShowJsonView(!showJsonView)}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-200 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/10 hover:border-white/20 transition-all cursor-pointer"
-            >
-              <Code2 className="w-3.5 h-3.5 text-purple-400" />
-              <span>{showJsonView ? "Hide JSON" : "Inspect Backend JSON"}</span>
+              <span>{refreshing ? "Syncing..." : "Sync Profile"}</span>
             </button>
           </div>
         </div>
@@ -172,30 +158,6 @@ export default function Profile({
           <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-3">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMsg}</span>
-          </div>
-        )}
-
-        {/* Developer JSON Inspector (Toggleable) */}
-        {showJsonView && (
-          <div className="mb-8 rounded-2xl bg-[#090614] border border-purple-500/30 p-5 shadow-[0_0_30px_rgba(168,85,247,0.15)] animate-in fade-in slide-in-from-top-2 duration-200">
-            <div className="flex items-center justify-between mb-3 border-b border-purple-900/30 pb-2">
-              <div className="flex items-center gap-2">
-                <Code2 className="w-4 h-4 text-purple-400" />
-                <span className="text-xs font-mono font-semibold text-purple-200">
-                  FastAPI Backend Response Payload (/auth/get/me)
-                </span>
-              </div>
-              <button
-                onClick={() => handleCopy(JSON.stringify(rawBackendData || profileData, null, 2), "json")}
-                className="text-[11px] font-mono text-zinc-400 hover:text-white flex items-center gap-1"
-              >
-                {copiedField === "json" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                {copiedField === "json" ? "Copied JSON" : "Copy Payload"}
-              </button>
-            </div>
-            <pre className="text-xs font-mono text-emerald-400 bg-black/60 p-4 rounded-xl overflow-x-auto border border-white/5">
-              {JSON.stringify(rawBackendData || profileData, null, 2)}
-            </pre>
           </div>
         )}
 
@@ -280,8 +242,8 @@ export default function Profile({
           </div>
         </div>
 
-        {/* 3 Detailed Attribute Cards for Name, Email, Image URL */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Account Attribute Cards: Name & Email */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           
           {/* 1. Name Card */}
           <div className="rounded-2xl bg-[#0c0818]/90 border border-zinc-800/80 hover:border-purple-500/40 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.5)] transition-all">
@@ -303,7 +265,7 @@ export default function Profile({
               {profileData.name || "Not provided"}
             </p>
             <p className="text-xs text-zinc-500 mt-2">
-              Retrieved from backend payload property: <code className="text-purple-300 font-mono">name</code>
+              Primary display name associated with your account
             </p>
           </div>
 
@@ -327,33 +289,7 @@ export default function Profile({
               {profileData.email || "No email bound"}
             </p>
             <p className="text-xs text-zinc-500 mt-2">
-              Retrieved from backend payload property: <code className="text-purple-300 font-mono">email</code>
-            </p>
-          </div>
-
-          {/* 3. Image URL Card */}
-          <div className="rounded-2xl bg-[#0c0818]/90 border border-zinc-800/80 hover:border-purple-500/40 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.5)] transition-all">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
-                <ImageIcon className="w-5 h-5" />
-              </div>
-              {profileData.imag_url && (
-                <button
-                  onClick={() => handleCopy(profileData.imag_url, "image_url")}
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-                  title="Copy Image URL"
-                >
-                  {copiedField === "image_url" ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                </button>
-              )}
-            </div>
-
-            <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Profile Image URL</p>
-            <p className="text-sm font-mono font-medium text-purple-300 mt-1 truncate" title={profileData.imag_url || "None"}>
-              {profileData.imag_url || "Default avatar active"}
-            </p>
-            <p className="text-xs text-zinc-500 mt-2">
-              Retrieved from backend payload property: <code className="text-purple-300 font-mono">imag_url / picture</code>
+              Verified email address for account authentication
             </p>
           </div>
 
