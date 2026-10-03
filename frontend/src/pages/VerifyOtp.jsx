@@ -116,9 +116,9 @@ export default function VerifyOtp() {
         await verifyEmail(email, fullOtp);
       }
 
-      setSuccess("Verification successful! Redirecting to your dashboard...");
+      setSuccess("Verification successful! Redirecting to home page...");
       setTimeout(() => {
-        navigate("/dashboard");
+        navigate("/");
       }, 1000);
     } catch (err) {
       const serverMsg = err.response?.data?.detail || err.response?.data?.message;

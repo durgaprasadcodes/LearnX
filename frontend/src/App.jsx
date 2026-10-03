@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Home from "./pages/home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Resume from "./pages/Resume";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -66,21 +65,12 @@ export default function App() {
           {/* Authentication Pages */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/verify-otp" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/verify_otp" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/verifyotp" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/very-otp" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/verify-email" element={<Navigate to="/dashboard" replace />} />
-
-          {/* Protected Routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/dashboard" element={<Navigate to="/" replace />} />
+          <Route path="/verify-otp" element={<Navigate to="/" replace />} />
+          <Route path="/verify_otp" element={<Navigate to="/" replace />} />
+          <Route path="/verifyotp" element={<Navigate to="/" replace />} />
+          <Route path="/very-otp" element={<Navigate to="/" replace />} />
+          <Route path="/verify-email" element={<Navigate to="/" replace />} />
           <Route
             path="/resume"
             element={

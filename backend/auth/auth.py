@@ -252,7 +252,7 @@ def user_existed_already(existing_google_user:GoogleUser,db:Session):
     
     # Redirect to React and attach cookies
     response=RedirectResponse(
-        url=f"{FRONTEND_URL}/dashboard",
+        url=f"{FRONTEND_URL}/",
         status_code=302
     )
     response.set_cookie(
@@ -348,7 +348,7 @@ async def google_callback(request:Request,background_tasks:BackgroundTasks,db:Se
     db.refresh(refresh_token_record)
     
     response=RedirectResponse(
-    url=f"{FRONTEND_URL}/dashboard",
+    url=f"{FRONTEND_URL}/",
     status_code=302
 )
 

@@ -20,7 +20,7 @@ export default function Register() {
 
     try {
       await register(name, email, password);
-      navigate("/dashboard");
+      navigate("/");
     } catch (err) {
       setError(
         err.response?.data?.detail ||

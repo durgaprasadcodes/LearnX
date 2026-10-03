@@ -140,11 +140,11 @@ export default function Profile({
         {/* Navigation Breadcrumb / Top Bar */}
         <div className="flex items-center justify-between mb-8">
           <Link
-            to="/dashboard"
+            to="/"
             className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-400 hover:text-purple-300 transition-colors px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 hover:border-purple-500/30"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Dashboard</span>
+            <span>Back to Home</span>
           </Link>
 
           <div className="flex items-center gap-3">
@@ -370,10 +370,10 @@ export default function Profile({
 
           <div className="flex items-center gap-3">
             <Link
-              to="/dashboard"
+              to="/"
               className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all flex items-center gap-2"
             >
-              <span>Go to Dashboard</span>
+              <span>Go to Home</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </Link>
           </div>
