@@ -803,8 +803,8 @@ export default function Resume() {
               </p>
             </div>
 
-            {/* 4 Interactive Quick Action Cards (Identical layout to screenshot) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full max-w-4xl px-2">
+            {/* 4 Interactive Quick Action Cards (Hidden on mobile screens) */}
+            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-3 w-full max-w-4xl px-2">
               {/* Card 1: Chat with Documents */}
               <button
                 type="button"

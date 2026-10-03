@@ -1,9 +1,12 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import DarkVeil from "./react-bits/DarkVeil";
 import { Sparkles, ArrowRight } from "lucide-react";
 
 export default function HeroSection({ user }) {
+  const navigate = useNavigate();
+
   const scrollToForms = () => {
     const el = document.getElementById("three-forms");
     if (el) el.scrollIntoView({ behavior: "smooth" });
@@ -80,7 +83,7 @@ export default function HeroSection({ user }) {
         >
           {/* Primary Button: White Pill "Get started" */}
           <button
-            onClick={scrollToForms}
+            onClick={() => navigate("/resume")}
             className="px-8 py-3.5 rounded-full bg-white text-black font-bold text-sm sm:text-base hover:bg-slate-100 hover:scale-105 active:scale-95 transition-all shadow-[0_0_35px_rgba(255,255,255,0.4)] cursor-pointer flex items-center gap-2"
           >
             <span>Get started</span>
