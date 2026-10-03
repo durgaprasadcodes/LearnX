@@ -32,9 +32,11 @@ FRONTEND_URL=os.getenv("FRONTEND_URL")
 
 raw_origins = os.getenv("ALLOWED_ORIGINS", '["http://localhost:3000","http://localhost:5173"]')
 try:
-    ALLOWED_ORIGINS = json.loads(raw_origins) if isinstance(raw_origins, str) and raw_origins.startswith("[") else [o.strip() for o in raw_origins.split(",") if o.strip()]
+    origins_list = json.loads(raw_origins) if isinstance(raw_origins, str) and raw_origins.startswith("[") else [o.strip() for o in raw_origins.split(",") if o.strip()]
 except Exception:
-    ALLOWED_ORIGINS = ["http://localhost:3000", "http://localhost:5173"]
+    origins_list = []
+
+ALLOWED_ORIGINS = list(set(origins_list + ["http://localhost:3000", "http://localhost:5173", "https://learnx-skillbridge.vercel.app"]))
 ACCESS_TOKEN_EXPIRY_TIME=int(os.getenv("ACCESS_TOKEN_EXPIRY_TIME"))
 REFRESH_TOKEN_EXPIRY_TIME=int(os.getenv("REFRESH_TOKEN_EXPIRY_TIME"))
 
@@ -46,154 +48,114 @@ GOOGLE_SESSION_SECRET=os.getenv("GOOGLE_SESSION_SECRET")
 MAIL_USERNAME=os.getenv("MAIL_USERNAME")
 MAIL_PASSWORD=os.getenv("MAIL_PASSWORD")
 MAIL_FROM=os.getenv("MAIL_FROM")
-MAIL_SERVER=os.getenv("MAIL_SERVER")
-MAIL_PORT=os.getenv("MAIL_PORT")
+MAIL_SERVER=os.getenv("MAIL_SERVER", "smtp.gmail.com")
+MAIL_PORT=os.getenv("MAIL_PORT", "465")
+RESEND_API_KEY=os.getenv("RESEND_API_KEY")
 
 
-async def send_email(to_email: str, otp: int):
-    message = EmailMessage()
-    message["From"]=MAIL_FROM
-    message["To"]=to_email
-    message["Subject"]="OTP Verfication"
-    message.add_alternative( f"""
-        <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Verification Code</title>
-</head>
+async def send_email(to_email: str, otp: str | int):
+    # Always log OTP to server console (visible in Render logs for instant testing)
+    print("\n" + "=" * 54, flush=True)
+    print(f"🔐 [OTP GENERATED] To: {to_email} | CODE: {otp}", flush=True)
+    print("=" * 54 + "\n", flush=True)
 
-<body style="margin:0; padding:0; background-color:#f4f7fb; font-family:Arial, Helvetica, sans-serif; color:#1f2937;">
+    # 1. Prefer HTTP-based email (Resend) if API key is present (Render NEVER blocks port 443 HTTPS)
+    if RESEND_API_KEY:
+        try:
+            import httpx
+            async with httpx.AsyncClient() as client:
+                res = await client.post(
+                    "https://api.resend.com/emails",
+                    headers={
+                        "Authorization": f"Bearer {RESEND_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "from": os.getenv("RESEND_FROM", "LearnX <onboarding@resend.dev>"),
+                        "to": [to_email],
+                        "subject": "LearnX Verification Code",
+                        "html": f"""
+                            <div style="font-family: Arial, sans-serif; max-width: 500px; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px;">
+                                <h2 style="color: #6d28d9; margin-top: 0;">LearnX Verification Code</h2>
+                                <p style="color: #475569; font-size: 15px;">Use the code below to complete your authentication:</p>
+                                <div style="font-size: 36px; font-weight: bold; letter-spacing: 6px; color: #1e1b4b; background: #f5f3ff; padding: 16px; border-radius: 8px; text-align: center; margin: 20px 0;">
+                                    {otp}
+                                </div>
+                                <p style="color: #94a3b8; font-size: 13px;">This code is valid for 10 minutes. If you did not request this, you can ignore this email.</p>
+                            </div>
+                        """,
+                    },
+                    timeout=10.0,
+                )
+                if res.status_code < 300:
+                    print(f"✅ Email successfully sent via Resend API to {to_email}", flush=True)
+                    return
+                else:
+                    print(f"❌ Resend API returned error {res.status_code}: {res.text}", flush=True)
+        except Exception as resend_err:
+            print(f"❌ Failed sending via Resend API: {resend_err}", flush=True)
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f7fb; padding:40px 16px;">
-        <tr>
-            <td align="center">
+    # 2. SMTP fallback
+    try:
+        message = EmailMessage()
+        message["From"] = MAIL_FROM or MAIL_USERNAME
+        message["To"] = to_email
+        message["Subject"] = "OTP Verification"
+        message.add_alternative(f"""
+            <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Your Verification Code</title>
+    </head>
+    <body style="margin:0; padding:0; background-color:#f4f7fb; font-family:Arial, Helvetica, sans-serif; color:#1f2937;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f7fb; padding:40px 16px;">
+            <tr>
+                <td align="center">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px; background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,0.06);">
+                        <tr>
+                            <td style="padding:28px 36px; border-bottom:1px solid #eef0f4;">
+                                <span style="font-size:22px; font-weight:700; color:#111827;">LearnX<span style="color:#7c3aed;">.</span></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:40px 36px 36px;">
+                                <h1 style="margin:0 0 14px; font-size:24px; color:#111827;">Your Verification Code</h1>
+                                <p style="margin:0 0 24px; font-size:15px; color:#6b7280;">Use the code below to complete your authentication:</p>
+                                <div style="font-size:36px; font-weight:700; letter-spacing:8px; color:#7c3aed; text-align:center; padding:20px; background:#f5f3ff; border-radius:10px; margin-bottom:20px;">
+                                    {otp}
+                                </div>
+                                <p style="margin:0; font-size:13px; color:#9ca3af; text-align:center;">This code expires in 10 minutes.</p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>""", subtype="html")
 
-                <!-- Main Card -->
-                <table width="100%" cellpadding="0" cellspacing="0" border="0"
-                    style="max-width:560px; background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,0.06);">
+        port_num = int(MAIL_PORT or 465)
+        # Port 465 uses direct SSL (use_tls=True, start_tls=False)
+        # Port 587 uses STARTTLS (use_tls=False, start_tls=True)
+        use_tls = (port_num == 465)
+        start_tls = (port_num != 465)
 
-                    <!-- Header -->
-                    <tr>
-                        <td style="padding:28px 36px; border-bottom:1px solid #eef0f4;">
-                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                                <tr>
-                                    <td>
-                                        <span style="font-size:22px; font-weight:700; color:#111827;">
-                                            YourApp<span style="color:#2563eb;">.</span>
-                                        </span>
-                                    </td>
-                                    <td align="right">
-                                        <span style="font-size:12px; color:#9ca3af;">
-                                            SECURITY
-                                        </span>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-
-                    <!-- Content -->
-                    <tr>
-                        <td style="padding:40px 36px 36px;">
-
-                            <h1 style="margin:0 0 14px; font-size:26px; line-height:1.3; color:#111827; font-weight:700;">
-                                Verify your email
-                            </h1>
-
-                            <p style="margin:0 0 26px; font-size:15px; line-height:1.7; color:#6b7280;">
-                                Use the verification code below to continue securely.
-                                This code is valid for a limited time.
-                            </p>
-
-                            <!-- OTP Box -->
-                            <table width="100%" cellpadding="0" cellspacing="0" border="0"
-                                style="background-color:#f0f6ff; border:1px solid #dbeafe; border-radius:10px;">
-                                <tr>
-                                    <td align="center" style="padding:24px 16px;">
-
-                                        <div style="font-size:12px; color:#64748b; text-transform:uppercase; letter-spacing:2px; margin-bottom:10px;">
-                                            Verification Code
-                                        </div>
-
-                                        <div style="font-size:36px; font-weight:700; letter-spacing:10px; color:#1d4ed8; padding-left:10px;">
-                                            {otp}
-                                        </div>
-
-                                    </td>
-                                </tr>
-                            </table>
-
-                            <p style="margin:24px 0 0; font-size:13px; line-height:1.6; color:#9ca3af; text-align:center;">
-                                This code expires in <strong style="color:#6b7280;">1 minute</strong>.
-                            </p>
-
-                            <!-- Security Notice -->
-                            <table width="100%" cellpadding="0" cellspacing="0" border="0"
-                                style="margin-top:32px; background-color:#fffbeb; border-left:4px solid #f59e0b;">
-                                <tr>
-                                    <td style="padding:14px 16px;">
-                                        <p style="margin:0; font-size:13px; line-height:1.6; color:#92400e;">
-                                            <strong>Security notice:</strong>
-                                            Never share this code with anyone.
-                                            Our team will never ask for your verification code.
-                                        </p>
-                                    </td>
-                                </tr>
-                            </table>
-
-                            <p style="margin:30px 0 0; font-size:14px; line-height:1.7; color:#6b7280;">
-                                If you didn't request this code, you can safely ignore this email.
-                                Your account remains secure.
-                            </p>
-
-                            <p style="margin:28px 0 0; font-size:14px; color:#374151;">
-                                Regards,<br>
-                                <strong>The YourApp Team</strong>
-                            </p>
-
-                        </td>
-                    </tr>
-
-                    <!-- Footer -->
-                    <tr>
-                        <td style="padding:22px 36px; background-color:#f9fafb; border-top:1px solid #eef0f4;">
-
-                            <p style="margin:0; font-size:12px; line-height:1.6; color:#9ca3af; text-align:center;">
-                                © 2026 YourApp. All rights reserved.
-                            </p>
-
-                            <p style="margin:6px 0 0; font-size:12px; color:#9ca3af; text-align:center;">
-                                This is an automated security email. Please do not reply.
-                            </p>
-
-                        </td>
-                    </tr>
-
-                </table>
-
-                <!-- Bottom Text -->
-                <p style="margin:20px 0 0; font-size:11px; color:#9ca3af; text-align:center;">
-                    You received this email because a verification request was made for your account.
-                </p>
-
-            </td>
-        </tr>
-    </table>
-
-</body>
-</html>""",subtype="html")
-
-
-    await aiosmtplib.send(
-        message,
-        hostname=MAIL_SERVER,
-        port=MAIL_PORT,
-        start_tls=True,
-        username=MAIL_USERNAME,
-        password=MAIL_PASSWORD
-    )
+        await aiosmtplib.send(
+            message,
+            hostname=MAIL_SERVER,
+            port=port_num,
+            use_tls=use_tls,
+            start_tls=start_tls,
+            username=MAIL_USERNAME,
+            password=MAIL_PASSWORD,
+            timeout=10.0,
+        )
+        print(f"✅ Email delivered via SMTP to {to_email}", flush=True)
+    except Exception as e:
+        print(f"⚠️ SMTP failed ({e}). Note: Render free tier blocks outbound SMTP ports 25 and 587.", flush=True)
+        print(f"👉 Tip: Use port 465 or set RESEND_API_KEY in Render environment variables for HTTPS email delivery.", flush=True)
 
 REDIS_HOST = os.getenv("REDIS_HOST")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
@@ -212,4 +174,4 @@ redis_client = redis.Redis(
 )
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")        
