@@ -51,6 +51,7 @@ MAIL_FROM=os.getenv("MAIL_FROM")
 MAIL_SERVER=os.getenv("MAIL_SERVER", "smtp.gmail.com")
 MAIL_PORT=os.getenv("MAIL_PORT", "465")
 RESEND_API_KEY=os.getenv("RESEND_API_KEY")
+BREVO_API_KEY=os.getenv("BREVO_API_KEY")
 
 
 async def send_email(to_email: str, otp: str | int):
@@ -59,7 +60,46 @@ async def send_email(to_email: str, otp: str | int):
     print(f"🔐 [OTP GENERATED] To: {to_email} | CODE: {otp}", flush=True)
     print("=" * 54 + "\n", flush=True)
 
-    # 1. Prefer HTTP-based email (Resend) if API key is present (Render NEVER blocks port 443 HTTPS)
+    # 1. Brevo HTTP API (allows sending to ANY recipient email on free tier without a custom domain)
+    if BREVO_API_KEY:
+        try:
+            import httpx
+            async with httpx.AsyncClient() as client:
+                res = await client.post(
+                    "https://api.brevo.com/v3/smtp/email",
+                    headers={
+                        "api-key": BREVO_API_KEY,
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "sender": {
+                            "name": "LearnX",
+                            "email": MAIL_FROM or MAIL_USERNAME or "durgaprasad04289@gmail.com",
+                        },
+                        "to": [{"email": to_email}],
+                        "subject": "LearnX Verification Code",
+                        "htmlContent": f"""
+                            <div style="font-family: Arial, sans-serif; max-width: 500px; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px;">
+                                <h2 style="color: #6d28d9; margin-top: 0;">LearnX Verification Code</h2>
+                                <p style="color: #475569; font-size: 15px;">Use the code below to complete your authentication:</p>
+                                <div style="font-size: 36px; font-weight: bold; letter-spacing: 6px; color: #1e1b4b; background: #f5f3ff; padding: 16px; border-radius: 8px; text-align: center; margin: 20px 0;">
+                                    {otp}
+                                </div>
+                                <p style="color: #94a3b8; font-size: 13px;">This code is valid for 10 minutes.</p>
+                            </div>
+                        """,
+                    },
+                    timeout=10.0,
+                )
+                if res.status_code < 300:
+                    print(f"✅ Email successfully sent via Brevo API to {to_email}", flush=True)
+                    return
+                else:
+                    print(f"❌ Brevo API error {res.status_code}: {res.text}", flush=True)
+        except Exception as brevo_err:
+            print(f"❌ Failed sending via Brevo API: {brevo_err}", flush=True)
+
+    # 2. Resend HTTP API (delivers to Resend account owner's email on free test tier)
     if RESEND_API_KEY:
         try:
             import httpx
@@ -81,7 +121,7 @@ async def send_email(to_email: str, otp: str | int):
                                 <div style="font-size: 36px; font-weight: bold; letter-spacing: 6px; color: #1e1b4b; background: #f5f3ff; padding: 16px; border-radius: 8px; text-align: center; margin: 20px 0;">
                                     {otp}
                                 </div>
-                                <p style="color: #94a3b8; font-size: 13px;">This code is valid for 10 minutes. If you did not request this, you can ignore this email.</p>
+                                <p style="color: #94a3b8; font-size: 13px;">This code is valid for 10 minutes.</p>
                             </div>
                         """,
                     },
@@ -95,7 +135,7 @@ async def send_email(to_email: str, otp: str | int):
         except Exception as resend_err:
             print(f"❌ Failed sending via Resend API: {resend_err}", flush=True)
 
-    # 2. SMTP fallback
+    # 3. SMTP fallback (automatically tries port 465 SSL because Render blocks 587)
     try:
         message = EmailMessage()
         message["From"] = MAIL_FROM or MAIL_USERNAME
@@ -136,26 +176,53 @@ async def send_email(to_email: str, otp: str | int):
     </body>
     </html>""", subtype="html")
 
-        port_num = int(MAIL_PORT or 465)
-        # Port 465 uses direct SSL (use_tls=True, start_tls=False)
-        # Port 587 uses STARTTLS (use_tls=False, start_tls=True)
-        use_tls = (port_num == 465)
-        start_tls = (port_num != 465)
+        # If Brevo SMTP key is provided (starts with xsmtpsib), send via Brevo SMTP relay on port 465 SSL
+        if BREVO_API_KEY and BREVO_API_KEY.startswith("xsmtpsib"):
+            try:
+                await aiosmtplib.send(
+                    message,
+                    hostname="smtp-relay.brevo.com",
+                    port=465,
+                    use_tls=True,
+                    start_tls=False,
+                    username=MAIL_FROM or MAIL_USERNAME or "durgaprasad04289@gmail.com",
+                    password=BREVO_API_KEY,
+                    timeout=8.0,
+                )
+                print(f"✅ Email delivered via Brevo SMTP relay (port 465) to {to_email}", flush=True)
+                return
+            except Exception as brevo_smtp_err:
+                print(f"⚠️ Brevo SMTP relay failed: {brevo_smtp_err}", flush=True)
 
-        await aiosmtplib.send(
-            message,
-            hostname=MAIL_SERVER,
-            port=port_num,
-            use_tls=use_tls,
-            start_tls=start_tls,
-            username=MAIL_USERNAME,
-            password=MAIL_PASSWORD,
-            timeout=10.0,
-        )
-        print(f"✅ Email delivered via SMTP to {to_email}", flush=True)
+        # Try port 465 SSL first for Gmail because port 587 is blocked on Render
+        configured_port = int(MAIL_PORT or 465)
+        ports_to_try = [465] if configured_port == 587 else [configured_port, 465]
+
+        sent = False
+        for p in ports_to_try:
+            try:
+                use_tls = (p == 465)
+                start_tls = (p != 465)
+                await aiosmtplib.send(
+                    message,
+                    hostname=MAIL_SERVER,
+                    port=p,
+                    use_tls=use_tls,
+                    start_tls=start_tls,
+                    username=MAIL_USERNAME,
+                    password=MAIL_PASSWORD,
+                    timeout=8.0,
+                )
+                print(f"✅ Email delivered via SMTP ({MAIL_SERVER}:{p}) to {to_email}", flush=True)
+                sent = True
+                break
+            except Exception as smtp_attempt_err:
+                print(f"⚠️ SMTP on port {p} failed: {smtp_attempt_err}", flush=True)
+
+        if not sent:
+            print("⚠️ All SMTP attempts failed. Use Render logs to view the OTP or add BREVO_API_KEY.", flush=True)
     except Exception as e:
-        print(f"⚠️ SMTP failed ({e}). Note: Render free tier blocks outbound SMTP ports 25 and 587.", flush=True)
-        print(f"👉 Tip: Use port 465 or set RESEND_API_KEY in Render environment variables for HTTPS email delivery.", flush=True)
+        print(f"⚠️ SMTP error: {e}", flush=True)
 
 REDIS_HOST = os.getenv("REDIS_HOST")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
