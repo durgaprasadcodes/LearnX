@@ -121,11 +121,15 @@ export default function VerifyOtp() {
         navigate("/dashboard");
       }, 1000);
     } catch (err) {
-      setError(
-        err.response?.data?.detail ||
-          err.response?.data?.message ||
-          "Invalid or expired OTP. Please try again."
-      );
+      const serverMsg = err.response?.data?.detail || err.response?.data?.message;
+      if (err.response?.status === 404) {
+        setError(
+          serverMsg ||
+            "No pending OTP found for this email, or the OTP has expired. Please request a new code."
+        );
+      } else {
+        setError(serverMsg || "Invalid or expired OTP. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -140,6 +144,10 @@ export default function VerifyOtp() {
     setError("");
 
     try {
+      if (googleIdParam) {
+        window.location.href = `${API_BASE_URL}/auth/google/login`;
+        return;
+      }
       // Re-trigger registration OTP via backend
       await api.post("/auth/register", {
         name: email.split("@")[0],
@@ -150,7 +158,10 @@ export default function VerifyOtp() {
       setSuccess(`A new OTP has been dispatched to ${email}`);
       setTimeout(() => setSuccess(""), 4000);
     } catch (err) {
-      setError(err.response?.data?.detail || "Could not resend OTP at this time.");
+      setError(
+        err.response?.data?.detail ||
+          "Could not resend OTP. If the account is already registered, please go to Login."
+      );
     } finally {
       setResending(false);
     }

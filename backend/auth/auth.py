@@ -41,6 +41,7 @@ async def register(user:RegistrationSchema, background_tasks:BackgroundTasks, db
 
 
 @router.post("/verify-email")
+@router.post("/verify-otp")
 async def verify_email(response:Response, payload:VerifyEmail, db:Session=Depends(get_db)):
     redis_key = f"pending_register:{payload.email}"
     raw = await redis_client.get(redis_key)
@@ -374,6 +375,7 @@ async def google_callback(request:Request,background_tasks:BackgroundTasks,db:Se
 
     
 @router.post("/verify_otp")
+@router.post("/google/verify-otp")
 async def verify_otp(response:Response,verify_request:VerifyOTP,db:Session=Depends(get_db)):
     redis_key = f"otp:{verify_request.email}"
     redis_stored_opt = await redis_client.get(redis_key)

@@ -71,15 +71,64 @@ export function AuthProvider({ children }) {
 
   // 3. Verify OTP for email registration
   const verifyEmail = async (email, otp) => {
-    const res = await api.post("/auth/verify-email", { email, otp });
-    await checkAuth();
+    let res;
+    try {
+      res = await api.post("/auth/verify-email", { email, otp });
+    } catch (err) {
+      if (err.response?.status === 404) {
+        // Fallback in case deployed backend uses /auth/verify-otp or /auth/verify_otp
+        try {
+          res = await api.post("/auth/verify-otp", { email, otp });
+        } catch (_) {
+          res = await api.post("/auth/verify_otp", { email, otp, google_id: "" });
+        }
+      } else {
+        throw err;
+      }
+    }
+
+    const userData = {
+      name: email.split("@")[0],
+      email: email,
+    };
+    setUser(userData);
+    localStorage.setItem("learnx_user", JSON.stringify(userData));
+
+    try {
+      await checkAuth();
+    } catch (_) {}
+
     return res.data;
   };
 
   // 4. Verify OTP for Google account linking
   const verifyGoogleOtp = async (email, google_id, otp) => {
-    const res = await api.post("/auth/verify_otp", { email, google_id, otp });
-    await checkAuth();
+    let res;
+    try {
+      res = await api.post("/auth/verify_otp", { email, google_id, otp });
+    } catch (err) {
+      if (err.response?.status === 404) {
+        try {
+          res = await api.post("/auth/google/verify-otp", { email, google_id, otp });
+        } catch (_) {
+          res = await api.post("/auth/verify-otp", { email, google_id, otp });
+        }
+      } else {
+        throw err;
+      }
+    }
+
+    const userData = {
+      name: email.split("@")[0],
+      email: email,
+    };
+    setUser(userData);
+    localStorage.setItem("learnx_user", JSON.stringify(userData));
+
+    try {
+      await checkAuth();
+    } catch (_) {}
+
     return res.data;
   };
 

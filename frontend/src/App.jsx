@@ -68,6 +68,11 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/verify-otp" element={<VerifyOtp />} />
+          <Route path="/verify_otp" element={<VerifyOtp />} />
+          <Route path="/verifyotp" element={<VerifyOtp />} />
+          <Route path="/verify-otp" element={<VerifyOtp />} />
+          <Route path="/very-otp" element={<VerifyOtp />} />
+          <Route path="/verify-email" element={<VerifyOtp />} />
 
           {/* Protected Routes */}
           <Route

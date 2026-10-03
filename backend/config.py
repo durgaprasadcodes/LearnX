@@ -7,6 +7,8 @@ import aiosmtplib
 import secrets
 import redis.asyncio as redis
 
+import json
+
 load_dotenv()
 
 pwd_lib = PasswordHash.recommended()
@@ -27,7 +29,12 @@ SUPABASE_DATABASE_URL=os.getenv("SUPABASE_DATABASE_URL")
 SECRET_KEY=os.getenv("SECRET_KEY")
 ALGORITHM=os.getenv("ALGORITHM")
 FRONTEND_URL=os.getenv("FRONTEND_URL")
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS")
+
+raw_origins = os.getenv("ALLOWED_ORIGINS", '["http://localhost:3000","http://localhost:5173"]')
+try:
+    ALLOWED_ORIGINS = json.loads(raw_origins) if isinstance(raw_origins, str) and raw_origins.startswith("[") else [o.strip() for o in raw_origins.split(",") if o.strip()]
+except Exception:
+    ALLOWED_ORIGINS = ["http://localhost:3000", "http://localhost:5173"]
 ACCESS_TOKEN_EXPIRY_TIME=int(os.getenv("ACCESS_TOKEN_EXPIRY_TIME"))
 REFRESH_TOKEN_EXPIRY_TIME=int(os.getenv("REFRESH_TOKEN_EXPIRY_TIME"))
 
