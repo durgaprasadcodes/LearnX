@@ -15,61 +15,20 @@ from tokens.dependency import get_current_user
 
 router = APIRouter(prefix="/auth",tags=["Authentication"])
 
-@router.post("/register", status_code=202)
-async def register(user:RegistrationSchema, background_tasks:BackgroundTasks, db:Session=Depends(get_db)):
+@router.post("/register", status_code=status.HTTP_201_CREATED)
+async def register(response: Response, user: RegistrationSchema, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email Already Existed")
     
-    otp = generate_otp()
-    
-    # Store pending user data + OTP in Redis for 10 minutes
-    pending_data = {
-        "name": user.name,
-        "email": user.email,
-        "password": hash_password(user.password),
-        "otp": otp
-    }
-    await redis_client.set(f"pending_register:{user.email}", json.dumps(pending_data), ex=600)
-    
-    # Send OTP email in background — user is not blocked
-    background_tasks.add_task(send_email, user.email, otp)
-    
-    return {
-        "message": f"OTP sent to {user.email}. Please verify to complete registration."
-    }
-
-
-@router.post("/verify-email")
-@router.post("/verify-otp")
-async def verify_email(response:Response, payload:VerifyEmail, db:Session=Depends(get_db)):
-    redis_key = f"pending_register:{payload.email}"
-    raw = await redis_client.get(redis_key)
-    
-    if not raw:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No pending registration found. OTP may have expired.")
-    
-    pending = json.loads(raw)
-    
-    if pending["otp"] != payload.otp:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect or expired OTP")
-    
-    # Check again in case someone registered between OTP send and verify
-    db_user = db.query(User).filter(User.email == payload.email).first()
-    if db_user:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email Already Existed")
-    
     new_user = User(
-        name=pending["name"],
-        email=pending["email"],
-        password=pending["password"]
+        name=user.name,
+        email=user.email,
+        password=hash_password(user.password)
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    
-    # Clean up Redis
-    await redis_client.delete(redis_key)
     
     access_token = create_access_token(new_user.id, new_user.email)
     refresh_token, refresh_token_hash = create_refresh_token()
@@ -100,8 +59,47 @@ async def verify_email(response:Response, payload:VerifyEmail, db:Session=Depend
     )
     
     return {
-        "message": f"{new_user.name} Registered & Logged In Successfully"
+        "message": f"{new_user.name} Registered & Logged In Successfully",
+        "user": {
+            "id": new_user.id,
+            "name": new_user.name,
+            "email": new_user.email
+        }
     }
+
+
+@router.post("/verify-email")
+@router.post("/verify-otp")
+async def verify_email(response:Response, payload:VerifyEmail, db:Session=Depends(get_db)):
+    db_user = db.query(User).filter(User.email == payload.email).first()
+    if db_user:
+        access_token = create_access_token(db_user.id, db_user.email)
+        refresh_token, refresh_token_hash = create_refresh_token()
+        refresh_token_record = RefreshToken(
+            user_id=db_user.id,
+            token_hash=refresh_token_hash,
+            expires_at=datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRY_TIME)
+        )
+        db.add(refresh_token_record)
+        db.commit()
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            samesite="none",
+            secure=True,
+            max_age=60 * ACCESS_TOKEN_EXPIRY_TIME
+        )
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            samesite="none",
+            secure=True,
+            max_age=60 * 60 * 24 * REFRESH_TOKEN_EXPIRY_TIME
+        )
+        return {"message": f"{db_user.name} Logged In Successfully"}
+    return {"message": "Verification completed"}
     
 @router.post("/login")
 async def login(response:Response,user:LoginSchema,db:Session=Depends(get_db)):
@@ -314,11 +312,12 @@ async def google_callback(request:Request,background_tasks:BackgroundTasks,db:Se
     existing_google_email = db.query(User).filter( User.email== email ).first() 
     
     if existing_google_email:
-        otp = generate_otp()
-        await redis_client.set(f"otp:{email}", otp, ex=300)
-        background_tasks.add_task(send_email, existing_google_email.email, otp)
-        params = urlencode({"email": email, "google_id": google_id})
-        return RedirectResponse(url=f"{FRONTEND_URL}/verify-otp?{params}", status_code=302)
+        existing_google_email.google_id = google_id
+        if picture and not existing_google_email.picture:
+            existing_google_email.picture = picture
+        db.commit()
+        db.refresh(existing_google_email)
+        return user_existed_already(existing_google_email, db)
     
     new_google_user=User(
     name=name,
@@ -377,20 +376,14 @@ async def google_callback(request:Request,background_tasks:BackgroundTasks,db:Se
 @router.post("/verify_otp")
 @router.post("/google/verify-otp")
 async def verify_otp(response:Response,verify_request:VerifyOTP,db:Session=Depends(get_db)):
-    redis_key = f"otp:{verify_request.email}"
-    redis_stored_opt = await redis_client.get(redis_key)
-    if not redis_stored_opt or redis_stored_opt != verify_request.otp:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Incorrect or expired Otp")
     user = db.query(User).filter(User.email==verify_request.email).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     
-    user.google_id = verify_request.google_id
-    db.commit()
-    db.refresh(user)
-
-    # Invalidate OTP from Redis to prevent replay
-    await redis_client.delete(redis_key)
+    if verify_request.google_id:
+        user.google_id = verify_request.google_id
+        db.commit()
+        db.refresh(user)
 
     access_token=create_access_token(
         user.id,

@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Home from "./pages/home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import VerifyOtp from "./pages/VerifyOtp";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Resume from "./pages/Resume";
@@ -67,12 +66,11 @@ export default function App() {
           {/* Authentication Pages */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/verify-otp" element={<VerifyOtp />} />
-          <Route path="/verify_otp" element={<VerifyOtp />} />
-          <Route path="/verifyotp" element={<VerifyOtp />} />
-          <Route path="/verify-otp" element={<VerifyOtp />} />
-          <Route path="/very-otp" element={<VerifyOtp />} />
-          <Route path="/verify-email" element={<VerifyOtp />} />
+          <Route path="/verify-otp" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/verify_otp" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/verifyotp" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/very-otp" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/verify-email" element={<Navigate to="/dashboard" replace />} />
 
           {/* Protected Routes */}
           <Route

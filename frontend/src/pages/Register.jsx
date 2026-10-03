@@ -20,8 +20,7 @@ export default function Register() {
 
     try {
       await register(name, email, password);
-      // Navigate to OTP verification page
-      navigate(`/verify-otp?email=${encodeURIComponent(email)}`);
+      navigate("/dashboard");
     } catch (err) {
       setError(
         err.response?.data?.detail ||
@@ -160,10 +159,10 @@ export default function Register() {
             className="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white font-medium text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer mt-2"
           >
             {loading ? (
-              <span>Sending verification code...</span>
+              <span>Creating your account...</span>
             ) : (
               <>
-                <span>Continue to OTP Verification</span>
+                <span>Create Account & Sign In</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}

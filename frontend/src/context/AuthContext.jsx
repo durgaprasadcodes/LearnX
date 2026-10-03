@@ -63,9 +63,18 @@ export function AuthProvider({ children }) {
     return res.data;
   };
 
-  // 2. Manual Registration (name, email, password) -> triggers OTP email
+  // 2. Manual Registration (name, email, password) -> logs in user directly
   const register = async (name, email, password) => {
     const res = await api.post("/auth/register", { name, email, password });
+    const userData = res.data?.user || {
+      name: name || email.split("@")[0],
+      email: email,
+    };
+    setUser(userData);
+    localStorage.setItem("learnx_user", JSON.stringify(userData));
+    try {
+      await checkAuth();
+    } catch (_) {}
     return res.data;
   };
 
