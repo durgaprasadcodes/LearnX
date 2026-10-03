@@ -38,21 +38,6 @@ export default function HeroSection({ user }) {
       {/* 2. CENTERED HERO CONTENT (MATCHING IMAGE 2) */}
       <div className="relative z-10 max-w-5xl mx-auto flex flex-col items-center text-center px-4">
         
-        {/* Top Pill Badge: NEW Creative Components */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="inline-flex items-center gap-3 py-2 px-3 pr-5 rounded-full bg-[#140e26]/85 border border-purple-500/35 text-purple-200 text-sm backdrop-blur-2xl shadow-[0_0_30px_rgba(168,85,247,0.3)] mb-10"
-        >
-          <span className="px-3.5 py-1 rounded-full bg-white text-black font-black text-xs uppercase tracking-wider shadow-md">
-            NEW
-          </span>
-          <span className="text-sm font-semibold text-purple-100 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-purple-400" />
-            AI Intelligence & Creative Components
-          </span>
-        </motion.div>
 
         {/* Big Bold Headline from Image 2 */}
         <motion.h1
