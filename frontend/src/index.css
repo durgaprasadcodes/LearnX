@@ -23,20 +23,20 @@
   }
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Dark Theme */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #080612;
 }
 ::-webkit-scrollbar-thumb {
-  background: #7dd3fc;
+  background: #3b2069;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #38bdf8;
+  background: #7c3aed;
 }
 
 /* Glass effects - light mode */

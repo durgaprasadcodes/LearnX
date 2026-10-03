@@ -503,155 +503,147 @@ export default function Resume() {
         {/* ─── Chat Section ────────────────────────────── */}
         <div
           data-lenis-prevent="true"
-          className="flex flex-col rounded-2xl bg-[#0c0818]/90 border border-zinc-800/80 backdrop-blur-xl overflow-hidden shadow-2xl h-[650px] max-h-[85vh]"
+          className="flex flex-col rounded-2xl bg-[#0c0818]/90 border border-zinc-800/80 backdrop-blur-xl overflow-hidden shadow-2xl transition-all duration-300 w-full"
         >
-          {/* Chat Header */}
-          <div className="p-4 border-b border-zinc-800/80 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-fuchsia-600 flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.3)]">
-                <Bot className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                  AI Career Advisor
-                  {activeResume && (
-                    <span className="text-[10px] font-mono text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20 max-w-[200px] truncate">
-                      {activeResume.filename}
-                    </span>
-                  )}
-                </h2>
-                <p className="text-[11px] text-zinc-500">
-                  Powered by Groq LLM + FAISS Vector Search
-                </p>
-              </div>
-            </div>
-
-            {messages.length > 0 && (
-              <button
-                onClick={handleClearChat}
-                className="text-[11px] text-zinc-500 hover:text-zinc-300 px-2.5 py-1 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
-              >
-                Clear chat
-              </button>
-            )}
-          </div>
-
-          {/* Messages Area */}
-          <div
-            ref={messagesContainerRef}
-            data-lenis-prevent="true"
-            data-lenis-prevent-wheel="true"
-            data-lenis-prevent-touch="true"
-            className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4"
-            style={{ overscrollBehavior: "auto" }}
-          >
-            {messages.length === 0 && !chatLoading && (
-              <div className="flex flex-col items-center justify-center h-full text-center py-16 px-4">
-                <div className="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-4 shadow-[0_0_25px_rgba(168,85,247,0.15)]">
-                  <BookOpen className="w-8 h-8" />
+          {/* Chat Header - only visible when conversation is active */}
+          {(messages.length > 0 || chatLoading) && (
+            <div className="p-3.5 sm:p-4 border-b border-zinc-800/80 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-fuchsia-600 flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+                  <Bot className="w-4 h-4 text-white" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">
-                  {activeResumeId
-                    ? "Ask anything about your resume"
-                    : "Upload a resume to get started"}
-                </h3>
-                <p className="text-xs text-zinc-400 max-w-sm leading-relaxed">
-                  {activeResumeId
-                    ? 'Try asking: "What are my strongest skills?", "How can I improve my project section?", or "Give me a personalized interview prep roadmap"'
-                    : "Use the 📎 PDF button in the composer below to upload your resume. Once indexed, you can chat with the AI."}
-                </p>
+                <div>
+                  <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                    AI Career Advisor
+                    {activeResume && (
+                      <span className="text-[10px] font-mono text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20 max-w-[200px] truncate">
+                        {activeResume.filename}
+                      </span>
+                    )}
+                  </h2>
+                  <p className="text-[11px] text-zinc-500">
+                    Powered by Groq LLM + FAISS Vector Search
+                  </p>
+                </div>
               </div>
-            )}
 
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex gap-3 ${
-                  msg.role === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                {msg.role === "ai" && (
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-purple-600 to-fuchsia-600 flex items-center justify-center shrink-0 mt-0.5 shadow-[0_0_10px_rgba(168,85,247,0.3)]">
-                    <Bot className="w-4 h-4 text-white" />
-                  </div>
-                )}
+              {messages.length > 0 && (
+                <button
+                  onClick={handleClearChat}
+                  className="text-[11px] text-zinc-500 hover:text-zinc-300 px-2.5 py-1 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+                >
+                  Clear chat
+                </button>
+              )}
+            </div>
+          )}
 
+          {/* Messages Area - ONLY rendered when user has asked a question or LLM is answering */}
+          {(messages.length > 0 || chatLoading) && (
+            <div
+              ref={messagesContainerRef}
+              data-lenis-prevent="true"
+              data-lenis-prevent-wheel="true"
+              data-lenis-prevent-touch="true"
+              className="p-4 space-y-4 overflow-y-auto max-h-[60vh] transition-all duration-300"
+              style={{ overscrollBehavior: "auto" }}
+            >
+              {messages.map((msg, i) => (
                 <div
-                  className={`max-w-[80%] sm:max-w-[75%] rounded-2xl px-4 py-3 ${
-                    msg.role === "user"
-                      ? "bg-purple-600/20 border border-purple-500/30 text-white"
-                      : "bg-[#090614] border border-zinc-800/80 text-slate-200"
+                  key={i}
+                  className={`flex gap-3 ${
+                    msg.role === "user" ? "justify-end" : "justify-start"
                   }`}
                 >
-                  {msg.role === "user" ? (
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                      {msg.content}
-                    </p>
-                  ) : (
-                    <RenderMarkdown text={msg.content} />
+                  {msg.role === "ai" && (
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-purple-600 to-fuchsia-600 flex items-center justify-center shrink-0 mt-0.5 shadow-[0_0_10px_rgba(168,85,247,0.3)]">
+                      <Bot className="w-4 h-4 text-white" />
+                    </div>
                   )}
 
-                  {/* Sources */}
-                  {msg.sources && msg.sources.length > 0 && (
-                    <div className="mt-3 pt-2 border-t border-zinc-800/60">
-                      <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold mb-1">
-                        Sources
+                  <div
+                    className={`max-w-[80%] sm:max-w-[75%] rounded-2xl px-4 py-3 ${
+                      msg.role === "user"
+                        ? "bg-purple-600/20 border border-purple-500/30 text-white"
+                        : "bg-[#090614] border border-zinc-800/80 text-slate-200"
+                    }`}
+                  >
+                    {msg.role === "user" ? (
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                        {msg.content}
                       </p>
-                      <div className="flex flex-wrap gap-1">
-                        {msg.sources.map((src, si) => (
-                          <span
-                            key={si}
-                            className="text-[10px] font-mono text-purple-400/70 bg-purple-500/5 px-1.5 py-0.5 rounded border border-purple-500/10"
-                          >
-                            p{src.page_number}:c{src.chunk_index}
-                          </span>
-                        ))}
+                    ) : (
+                      <RenderMarkdown text={msg.content} />
+                    )}
+
+                    {/* Sources */}
+                    {msg.sources && msg.sources.length > 0 && (
+                      <div className="mt-3 pt-2 border-t border-zinc-800/60">
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold mb-1">
+                          Sources
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {msg.sources.map((src, si) => (
+                            <span
+                              key={si}
+                              className="text-[10px] font-mono text-purple-400/70 bg-purple-500/5 px-1.5 py-0.5 rounded border border-purple-500/10"
+                            >
+                              p{src.page_number}:c{src.chunk_index}
+                            </span>
+                          ))}
+                        </div>
                       </div>
+                    )}
+                  </div>
+
+                  {msg.role === "user" && (
+                    <div className="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0 mt-0.5">
+                      {user?.picture ? (
+                        <img
+                          src={user.picture}
+                          alt=""
+                          className="w-7 h-7 rounded-lg object-cover"
+                        />
+                      ) : (
+                        <User className="w-4 h-4 text-zinc-400" />
+                      )}
                     </div>
                   )}
                 </div>
+              ))}
 
-                {msg.role === "user" && (
-                  <div className="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0 mt-0.5">
-                    {user?.picture ? (
-                      <img
-                        src={user.picture}
-                        alt=""
-                        className="w-7 h-7 rounded-lg object-cover"
-                      />
-                    ) : (
-                      <User className="w-4 h-4 text-zinc-400" />
-                    )}
+              {/* AI Thinking State */}
+              {chatLoading && (
+                <div className="flex gap-3 justify-start">
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-purple-600 to-fuchsia-600 flex items-center justify-center shrink-0 mt-0.5">
+                    <Bot className="w-4 h-4 text-white" />
                   </div>
-                )}
-              </div>
-            ))}
-
-            {/* AI Thinking State */}
-            {chatLoading && (
-              <div className="flex gap-3 justify-start">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-purple-600 to-fuchsia-600 flex items-center justify-center shrink-0 mt-0.5">
-                  <Bot className="w-4 h-4 text-white" />
+                  <div className="rounded-2xl bg-[#090614]/60 overflow-hidden border-0">
+                    <AITextLoading
+                      loadingStates={[
+                        "Searching your resume chunks...",
+                        "Analyzing relevant qualifications...",
+                        "Generating personalized career insights...",
+                        "Crafting response...",
+                      ]}
+                      interval={2200}
+                    />
+                  </div>
                 </div>
-                <div className="rounded-2xl bg-[#090614]/60 overflow-hidden border-0">
-                  <AITextLoading
-                    loadingStates={[
-                      "Searching your resume chunks...",
-                      "Analyzing relevant qualifications...",
-                      "Generating personalized career insights...",
-                      "Crafting response...",
-                    ]}
-                    interval={2200}
-                  />
-                </div>
-              </div>
-            )}
+              )}
 
-            <div ref={chatEndRef} />
-          </div>
+              <div ref={chatEndRef} />
+            </div>
+          )}
 
           {/* ─── Unified ChatGPT-style AI Composer ─────── */}
-          <div className="p-3 sm:p-4 border-t border-zinc-800/80 bg-[#080512]/70 shrink-0">
+          <div
+            className={`p-3 sm:p-4 bg-[#080512]/70 shrink-0 ${
+              messages.length > 0 || chatLoading
+                ? "border-t border-zinc-800/80"
+                : ""
+            }`}
+          >
             {/* Upload Error Banner if any */}
             {uploadError && (
               <div className="mb-2.5 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between gap-2">
