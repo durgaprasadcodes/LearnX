@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import AITextLoading from "../components/kokonutui/AITextLoading";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import {
   Sparkles,
   Plus,
@@ -765,35 +766,14 @@ export default function Resume() {
         {/* ─── Center Hero (When NO messages) ───────────────── */}
         {messages.length === 0 && !chatLoading && (
           <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-4 py-8 relative z-10">
-            {/* Glowing 3D Celestial Planet with Orbital Rings */}
-            <div className="relative w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center my-2 select-none pointer-events-none">
-              {/* Outer atmospheric aura */}
-              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-600/35 via-indigo-500/25 to-purple-600/35 blur-2xl animate-pulse" />
-
-              {/* Orbital Ring 1 */}
-              <div
-                className="absolute w-56 sm:w-64 h-24 rounded-[100%] border border-cyan-400/40"
-                style={{
-                  transform: "rotateX(72deg) rotateZ(-25deg)",
-                  boxShadow: "0 0 15px rgba(56, 189, 248, 0.4)",
-                }}
+            {/* Lottie Animation Globe */}
+            <div className="w-56 h-56 sm:w-64 sm:h-64 flex items-center justify-center my-2 pointer-events-none select-none relative">
+              <DotLottieReact
+                src="https://lottie.host/6a2f3d30-ec29-4b6c-8708-4f0102deb22f/QcfyWPAhD7.lottie"
+                loop
+                autoplay
+                className="w-full h-full object-contain"
               />
-
-              {/* Orbital Ring 2 */}
-              <div
-                className="absolute w-60 sm:w-72 h-28 rounded-[100%] border border-purple-400/30"
-                style={{
-                  transform: "rotateX(75deg) rotateZ(35deg)",
-                  boxShadow: "0 0 20px rgba(168, 85, 247, 0.3)",
-                }}
-              />
-
-              {/* Planet Central Sphere */}
-              <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full shadow-[inset_-12px_-12px_24px_rgba(0,0,0,0.85),inset_8px_8px_20px_rgba(147,197,253,0.7),0_0_40px_rgba(99,102,241,0.55)] bg-gradient-to-tr from-[#16143c] via-[#312e81] to-[#60a5fa] overflow-hidden flex items-center justify-center">
-                <div className="absolute -top-3 -left-3 w-16 h-16 bg-blue-300/40 rounded-full blur-xl" />
-                <div className="absolute bottom-2 right-2 w-14 h-14 bg-purple-500/30 rounded-full blur-lg" />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-indigo-950/30 to-slate-950/80" />
-              </div>
             </div>
 
             {/* Greeting Header */}
